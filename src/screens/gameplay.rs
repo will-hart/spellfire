@@ -1,8 +1,9 @@
 //! The screen state for the main gameplay.
 
 use bevy::{input::common_conditions::input_just_pressed, prelude::*, ui::Val::*};
+use wildfire::{OnLightningStrike, OnSpawnMap};
 
-use crate::{Pause, demo::level::spawn_level, menus::Menu, screens::Screen};
+use crate::{Pause, demo::level::spawn_level, input::MousePosition, menus::Menu, screens::Screen};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Screen::Gameplay), spawn_level);
@@ -28,6 +29,12 @@ pub(super) fn plugin(app: &mut App) {
         OnEnter(Menu::None),
         unpause.run_if(in_state(Screen::Gameplay)),
     );
+
+    app.add_systems(
+        Update,
+        handle_lightning_strike_input
+            .run_if(in_state(Screen::Gameplay).and(input_just_pressed(MouseButton::Left))),
+    );
 }
 
 fn unpause(mut next_pause: ResMut<NextState<Pause>>) {
@@ -36,6 +43,25 @@ fn unpause(mut next_pause: ResMut<NextState<Pause>>) {
 
 fn pause(mut next_pause: ResMut<NextState<Pause>>) {
     next_pause.set(Pause(true));
+}
+
+fn handle_lightning_strike_input(
+    mut commands: Commands,
+    mouse_pos: Res<MousePosition>,
+    map: Option<Res<OnSpawnMap>>,
+) {
+    if let Some(map) = map {
+        // convert to tile coords
+        let offset_x = map.size.x as f32 * map.sprite_size * 0.5;
+        let offset_y = map.size.y as f32 * map.sprite_size * 0.5;
+
+        let x = ((mouse_pos.world_pos.x + offset_x) / map.sprite_size).floor() as i32;
+        let y = ((mouse_pos.world_pos.y + offset_y) / map.sprite_size).floor() as i32;
+
+        commands.trigger(OnLightningStrike(IVec2::new(x, y)));
+    } else {
+        warn!("Skipping lightning strike input as there is no map yet");
+    }
 }
 
 fn spawn_pause_overlay(mut commands: Commands) {
