@@ -56,6 +56,10 @@ pub struct OnSpawnMap {
     pub sprite_size: f32,
 }
 
+#[derive(Component, Debug, Clone, Copy, Reflect)]
+#[reflect(Component)]
+pub struct SpawnedMap;
+
 fn spawn_map(trigger: Trigger<OnSpawnMap>, mut commands: Commands) {
     info!("Spawning map");
 
@@ -67,6 +71,8 @@ fn spawn_map(trigger: Trigger<OnSpawnMap>, mut commands: Commands) {
 
     commands
         .spawn((
+            Name::new("Spawned Map"),
+            SpawnedMap,
             Transform::from_xyz(
                 -(size_x as f32 * sprite_size) / 2.,
                 -(size_y as f32 * sprite_size) / 2.,

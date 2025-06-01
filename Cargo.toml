@@ -5,8 +5,6 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-wildfire = { path = "./crates/wildfire" }
-
 bevy = { version = "0.16", features = ["wayland"] }
 rand = "0.8"
 # Compile low-severity logs out of native builds for performance.
@@ -31,6 +29,11 @@ tracing = { version = "0.1", features = [
 # Alternatively, you can opt out of the rustflags check with this patch:
 #[patch.crates-io]
 #getrandom = { git = "https://github.com/benfrankel/getrandom" }
+
+[dependencies.bevy_life]
+git = "https://github.com/ManevilleF/bevy_life"
+rev = "d2f70049d3ffda496fd01ff12bbf29e7d11f115d"
+features = ["auto-coloring"]
 
 [features]
 # Default to a native dev build.

@@ -1,9 +1,15 @@
 //! The screen state for the main gameplay.
 
 use bevy::{input::common_conditions::input_just_pressed, prelude::*, ui::Val::*};
-use wildfire::{OnLightningStrike, OnSpawnMap};
 
-use crate::{Pause, demo::level::spawn_level, input::MousePosition, menus::Menu, screens::Screen};
+use crate::{
+    Pause,
+    demo::level::spawn_level,
+    input::MousePosition,
+    menus::Menu,
+    screens::Screen,
+    wildfire::{OnLightningStrike, OnSpawnMap},
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Screen::Gameplay), spawn_level);

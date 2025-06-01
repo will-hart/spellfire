@@ -3,7 +3,7 @@
 
 use bevy::prelude::*;
 
-use crate::{TerrainCell, TerrainCellState, TerrainType};
+use crate::wildfire::{TerrainCell, TerrainCellState, TerrainType};
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<OnLightningStrike>();
@@ -25,9 +25,7 @@ fn handle_lightning_strike(
         .find_map(|(s, t)| if t.coords == loc { Some(s) } else { None })
     {
         state.terrain = match state.terrain {
-            TerrainType::Grassland(size) | crate::TerrainType::Tree(size) => {
-                TerrainType::Fire(size)
-            }
+            TerrainType::Grassland(size) | TerrainType::Tree(size) => TerrainType::Fire(size),
             TerrainType::Fire(size) => TerrainType::Fire(size + 2),
             TerrainType::Dirt | TerrainType::Smoldering => state.terrain,
         };

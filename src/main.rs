@@ -12,6 +12,7 @@ mod input;
 mod menus;
 mod screens;
 mod theme;
+mod wildfire;
 
 use bevy::{asset::AssetMetaCheck, prelude::*};
 

@@ -1,18 +1,20 @@
-//! Spawn the main level.
+//! Spawn the main level and trigger a map to be spawned
 
 use bevy::prelude::*;
-use wildfire::OnSpawnMap;
 
 use crate::{
     asset_tracking::LoadResource,
     audio::music,
     demo::player::{PlayerAssets, player},
     screens::Screen,
+    wildfire::{OnSpawnMap, SpawnedMap},
 };
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<LevelAssets>();
     app.load_resource::<LevelAssets>();
+
+    app.add_systems(OnExit(Screen::Gameplay), despawn_maps);
 }
 
 #[derive(Resource, Asset, Clone, Reflect)]
@@ -53,7 +55,15 @@ pub fn spawn_level(
     ));
 
     commands.trigger(OnSpawnMap {
-        size: UVec2::splat(30),
-        sprite_size: 32.0,
+        size: UVec2::splat(256),
+        sprite_size: 8.0,
     });
+}
+
+fn despawn_maps(mut commands: Commands, maps: Query<Entity, With<SpawnedMap>>) {
+    for entity in &maps {
+        commands.entity(entity).despawn();
+    }
+
+    commands.remove_resource::<OnSpawnMap>();
 }
