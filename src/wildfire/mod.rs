@@ -5,8 +5,8 @@ use bevy::{
     color::palettes::{
         css::SANDY_BROWN,
         tailwind::{
-            AMBER_700, AMBER_900, AMBER_950, GREEN_600, GREEN_700, GREEN_800, GREEN_900, LIME_400,
-            LIME_500, LIME_600, LIME_700, ORANGE_600, ORANGE_700, YELLOW_400, YELLOW_500,
+            AMBER_700, AMBER_900, GREEN_600, GREEN_700, GREEN_800, GREEN_900, LIME_400, LIME_500,
+            LIME_600, LIME_700, ORANGE_600, ORANGE_700, SLATE_800, YELLOW_400, YELLOW_500,
             YELLOW_600,
         },
     },
@@ -16,10 +16,14 @@ use bevy_life::{Cell, CellState, CellularAutomatonPlugin, LifeSystemSet};
 
 mod lightning;
 pub use lightning::OnLightningStrike;
+use rand::Rng;
 
 use crate::Pause;
 
-const NEIGHBOR_COORDINATES: [IVec2; 8] = [
+/// the amount of cells in the neighbourhood
+const NEIGHBOURHOOD_SIZE: usize = 8;
+
+const NEIGHBOR_COORDINATES: [IVec2; NEIGHBOURHOOD_SIZE] = [
     // Left
     IVec2::new(-1, 0),
     // Top Left
@@ -168,31 +172,38 @@ pub struct TerrainCellState {
     pub wind: Vec2,
 }
 
+const CHANCE_OF_CATCHING: f64 = 0.15;
+const CHANCE_OF_REDUCING_FIRE: f64 = 0.6;
+
 impl CellState for TerrainCellState {
     fn new_cell_state<'a>(&self, neighbor_cells: impl Iterator<Item = &'a Self>) -> Self {
-        let firey_neighbours = if matches!(
-            self.terrain,
-            TerrainType::Grassland(_) | TerrainType::Tree(_)
-        ) {
-            neighbor_cells
-                .filter(|c| matches!(c.terrain, TerrainType::Fire(_)))
-                .count() as f32
-        } else {
-            0.
-        };
-
         match self.terrain {
             TerrainType::Grassland(size) | TerrainType::Tree(size) => {
-                if firey_neighbours >= 4.0 / (size as f32) {
-                    return TerrainCellState {
-                        terrain: TerrainType::Fire(size),
-                        wind: self.wind,
-                    };
-                } else {
-                    return TerrainCellState {
-                        terrain: TerrainType::Tree(size),
-                        wind: self.wind,
-                    };
+                let (firey_neighbours, smoldery_neighbours) =
+                    neighbor_cells.fold((0, 0), |(fire, smoke), item| match &item.terrain {
+                        TerrainType::Dirt | TerrainType::Grassland(_) | TerrainType::Tree(_) => {
+                            (fire, smoke)
+                        }
+                        TerrainType::Fire(_) => (fire + 1, smoke),
+                        TerrainType::Smoldering => (fire, smoke + 1),
+                    });
+
+                if firey_neighbours as f32 >= 4.0 / (size as f32) {
+                    if rand::rng().random_bool(CHANCE_OF_CATCHING) {
+                        return TerrainCellState {
+                            terrain: TerrainType::Fire(size),
+                            wind: self.wind,
+                        };
+                    }
+                } else if smoldery_neighbours == NEIGHBOURHOOD_SIZE / 2 {
+                    // if all neighbours are smoldering, then peer pressure
+                    // may just set this one off
+                    if rand::rng().random_bool(0.1) {
+                        return TerrainCellState {
+                            terrain: TerrainType::Fire(size),
+                            wind: self.wind,
+                        };
+                    }
                 }
             }
             TerrainType::Fire(1) => {
@@ -202,10 +213,12 @@ impl CellState for TerrainCellState {
                 };
             }
             TerrainType::Fire(size) => {
-                return Self {
-                    terrain: TerrainType::Fire(size - 1),
-                    wind: self.wind,
-                };
+                if rand::rng().random_bool(CHANCE_OF_REDUCING_FIRE) {
+                    return Self {
+                        terrain: TerrainType::Fire(size - 1),
+                        wind: self.wind,
+                    };
+                }
             }
             TerrainType::Smoldering | TerrainType::Dirt => {
                 // nop
@@ -239,7 +252,7 @@ impl CellState for TerrainCellState {
                 5 => YELLOW_500.into(),
                 _ => YELLOW_400.into(),
             },
-            TerrainType::Smoldering => AMBER_950.into(),
+            TerrainType::Smoldering => SLATE_800.into(),
         })
     }
 }

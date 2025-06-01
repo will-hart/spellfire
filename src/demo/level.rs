@@ -56,7 +56,7 @@ pub fn spawn_level(
 
     commands.trigger(OnSpawnMap {
         size: UVec2::splat(256),
-        sprite_size: 8.0,
+        sprite_size: 4.0,
     });
 }
 
