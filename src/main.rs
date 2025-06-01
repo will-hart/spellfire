@@ -55,6 +55,9 @@ impl Plugin for AppPlugin {
             theme::plugin,
         ));
 
+        // add logic plugins
+        app.add_plugins(wildfire::plugin);
+
         // Order new `AppSystems` variants by adding them here:
         app.configure_sets(
             Update,

@@ -1,6 +1,7 @@
 //! Spawn the main level.
 
 use bevy::prelude::*;
+use wildfire::OnSpawnMap;
 
 use crate::{
     asset_tracking::LoadResource,
@@ -50,4 +51,9 @@ pub fn spawn_level(
             )
         ],
     ));
+
+    commands.trigger(OnSpawnMap {
+        size: UVec2::splat(30),
+        sprite_size: 32.0,
+    });
 }
