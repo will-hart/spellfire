@@ -12,10 +12,12 @@ use bevy::{
     },
     prelude::*,
 };
-use bevy_life::{Cell, CellState, CellularAutomatonPlugin};
+use bevy_life::{Cell, CellState, CellularAutomatonPlugin, LifeSystemSet};
 
 mod lightning;
 pub use lightning::OnLightningStrike;
+
+use crate::Pause;
 
 const NEIGHBOR_COORDINATES: [IVec2; 8] = [
     // Left
@@ -44,6 +46,16 @@ pub fn plugin(app: &mut App) {
     app.register_type::<TerrainCellState>();
     app.register_type::<TerrainType>();
 
+    app.configure_sets(
+        PostUpdate,
+        (LifeSystemSet::NewCells, LifeSystemSet::RemovedCells)
+            .distributive_run_if(in_state(Pause(false)))
+            .chain(),
+    );
+    app.configure_sets(
+        Update,
+        LifeSystemSet::CellUpdate.run_if(in_state(Pause(false))),
+    );
     app.add_plugins((WildfirePlugin::new().with_time_step(0.1), lightning::plugin));
     app.add_observer(spawn_map);
 }
