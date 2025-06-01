@@ -172,8 +172,8 @@ pub struct TerrainCellState {
     pub wind: Vec2,
 }
 
-const CHANCE_OF_CATCHING: f64 = 0.15;
-const CHANCE_OF_REDUCING_FIRE: f64 = 0.6;
+const CHANCE_OF_CATCHING: f64 = 0.1;
+const CHANCE_OF_REDUCING_FIRE: f64 = 0.2;
 
 impl CellState for TerrainCellState {
     fn new_cell_state<'a>(&self, neighbor_cells: impl Iterator<Item = &'a Self>) -> Self {
@@ -191,7 +191,7 @@ impl CellState for TerrainCellState {
                 if firey_neighbours as f32 >= 4.0 / (size as f32) {
                     if rand::rng().random_bool(CHANCE_OF_CATCHING) {
                         return TerrainCellState {
-                            terrain: TerrainType::Fire(size),
+                            terrain: TerrainType::Fire(size * 2),
                             wind: self.wind,
                         };
                     }
