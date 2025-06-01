@@ -3,6 +3,7 @@
 use std::borrow::Cow;
 
 use bevy::{
+    color::palettes::tailwind::SLATE_400,
     ecs::{spawn::SpawnWith, system::IntoObserverSystem},
     prelude::*,
     ui::Val::*,
@@ -61,8 +62,8 @@ where
         action,
         (
             Node {
-                width: Px(380.0),
-                height: Px(80.0),
+                width: Px(350.0),
+                height: Px(60.0),
                 align_items: AlignItems::Center,
                 justify_content: JustifyContent::Center,
                 ..default()
@@ -122,7 +123,7 @@ where
                     children![(
                         Name::new("Button Text"),
                         Text(text),
-                        TextFont::from_font_size(40.0),
+                        TextFont::from_font_size(30.0),
                         TextColor(BUTTON_TEXT),
                         // Don't bubble picking events from the text up to the button.
                         Pickable::IGNORE,
@@ -130,6 +131,36 @@ where
                 ))
                 .insert(button_bundle)
                 .observe(action);
+        })),
+    )
+}
+
+pub fn disabled_button(text: impl Into<String>) -> impl Bundle {
+    let text = text.into();
+    (
+        Name::new("Disabled Button"),
+        Node::default(),
+        Children::spawn(SpawnWith(|parent: &mut ChildSpawner| {
+            parent.spawn((
+                Name::new("Disabled Button Inner"),
+                BackgroundColor(SLATE_400.into()),
+                Node {
+                    width: Px(350.0),
+                    height: Px(60.0),
+                    align_items: AlignItems::Center,
+                    justify_content: JustifyContent::Center,
+                    ..default()
+                },
+                BorderRadius::MAX,
+                children![(
+                    Name::new("Disabled Button Text"),
+                    Text(text),
+                    TextFont::from_font_size(30.0),
+                    TextColor(BUTTON_TEXT),
+                    // Don't bubble picking events from the text up to the button.
+                    Pickable::IGNORE,
+                )],
+            ));
         })),
     )
 }

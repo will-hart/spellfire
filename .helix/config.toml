@@ -1,1 +1,5 @@
-theme = "catppuccin_mocha"
+theme = "monokai_pro_machine"
+
+[editor.whitespace.render]
+newline = "none"
+space = "all"
