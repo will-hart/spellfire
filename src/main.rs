@@ -8,9 +8,11 @@ mod audio;
 mod demo;
 #[cfg(feature = "dev")]
 mod dev_tools;
+mod input;
 mod menus;
 mod screens;
 mod theme;
+mod wildfire;
 
 use bevy::{asset::AssetMetaCheck, prelude::*};
 
@@ -50,10 +52,14 @@ impl Plugin for AppPlugin {
             demo::plugin,
             #[cfg(feature = "dev")]
             dev_tools::plugin,
+            input::plugin,
             menus::plugin,
             screens::plugin,
             theme::plugin,
         ));
+
+        // add logic plugins
+        app.add_plugins(wildfire::plugin);
 
         // Order new `AppSystems` variants by adding them here:
         app.configure_sets(
@@ -97,6 +103,10 @@ struct Pause(pub bool);
 #[derive(SystemSet, Copy, Clone, Eq, PartialEq, Hash, Debug)]
 struct PausableSystems;
 
+#[derive(Debug, Clone, Copy, Component, Reflect)]
+#[reflect(Component)]
+pub struct MainCamera;
+
 fn spawn_camera(mut commands: Commands) {
-    commands.spawn((Name::new("Camera"), Camera2d));
+    commands.spawn((Name::new("Camera"), Camera2d, MainCamera));
 }
