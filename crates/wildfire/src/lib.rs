@@ -5,10 +5,9 @@ use bevy::{
     color::palettes::{
         css::SANDY_BROWN,
         tailwind::{
-            EMERALD_300, EMERALD_400, EMERALD_500, EMERALD_600, EMERALD_700, EMERALD_800,
-            EMERALD_900, GREEN_300, GREEN_400, GREEN_500, GREEN_600, GREEN_700, GREEN_800,
-            GREEN_900, ORANGE_500, ORANGE_700, RED_600, RED_700, RED_800, SLATE_800, YELLOW_700,
-            YELLOW_900,
+            AMBER_700, AMBER_900, AMBER_950, GREEN_600, GREEN_700, GREEN_800, GREEN_900, LIME_400,
+            LIME_500, LIME_600, LIME_700, ORANGE_600, ORANGE_700, YELLOW_400, YELLOW_500,
+            YELLOW_600,
         },
     },
     prelude::*,
@@ -45,7 +44,7 @@ pub fn plugin(app: &mut App) {
     app.register_type::<TerrainCellState>();
     app.register_type::<TerrainType>();
 
-    app.add_plugins((WildfirePlugin::new().with_time_step(1.0), lightning::plugin));
+    app.add_plugins((WildfirePlugin::new().with_time_step(0.1), lightning::plugin));
     app.add_observer(spawn_map);
 }
 
@@ -202,33 +201,27 @@ impl CellState for TerrainCellState {
         Some(match self.terrain {
             TerrainType::Dirt => SANDY_BROWN.into(),
             TerrainType::Grassland(size) => match size {
-                0 => GREEN_300.into(),
-                1 => GREEN_400.into(),
-                2 => GREEN_500.into(),
-                3 => GREEN_600.into(),
-                4 => GREEN_700.into(),
-                5 => GREEN_800.into(),
-                _ => GREEN_900.into(),
+                0 | 1 => LIME_400.into(),
+                2 | 3 => LIME_500.into(),
+                4 | 5 => LIME_600.into(),
+                _ => LIME_700.into(),
             },
             TerrainType::Tree(size) => match size {
-                0 => EMERALD_300.into(),
-                1 => EMERALD_400.into(),
-                2 => EMERALD_500.into(),
-                3 => EMERALD_600.into(),
-                4 => EMERALD_700.into(),
-                5 => EMERALD_800.into(),
-                _ => EMERALD_900.into(),
+                0 | 1 => GREEN_600.into(),
+                2 | 3 => GREEN_700.into(),
+                4 | 5 => GREEN_800.into(),
+                _ => GREEN_900.into(),
             },
             TerrainType::Fire(size) => match size {
-                0 => RED_800.into(),
-                1 => RED_700.into(),
-                2 => RED_600.into(),
-                3 => ORANGE_500.into(),
-                4 => ORANGE_700.into(),
-                5 => YELLOW_700.into(),
-                _ => YELLOW_900.into(),
+                0 => AMBER_900.into(),
+                1 => AMBER_700.into(),
+                2 => ORANGE_700.into(),
+                3 => ORANGE_600.into(),
+                4 => YELLOW_600.into(),
+                5 => YELLOW_500.into(),
+                _ => YELLOW_400.into(),
             },
-            TerrainType::Smoldering => SLATE_800.into(),
+            TerrainType::Smoldering => AMBER_950.into(),
         })
     }
 }
