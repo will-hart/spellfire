@@ -20,6 +20,7 @@ use crate::{Pause, wildfire::mapgen::NoiseMap};
 
 mod lightning;
 mod mapgen;
+mod wind;
 
 pub use lightning::OnLightningStrike;
 
@@ -82,7 +83,11 @@ pub fn plugin(app: &mut App) {
         Update,
         LifeSystemSet::CellUpdate.run_if(in_state(Pause(false))),
     );
-    app.add_plugins((WildfirePlugin::new().with_time_step(0.1), lightning::plugin));
+    app.add_plugins((
+        WildfirePlugin::new().with_time_step(0.1),
+        lightning::plugin,
+        wind::plugin,
+    ));
     app.add_observer(spawn_map);
 }
 
