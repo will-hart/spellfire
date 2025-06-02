@@ -46,7 +46,7 @@ fn wandery_wind(
         normed_wind.y + rng.random_range(-0.05..=0.05),
     ) * current_strength;
 
-    info!("Wind - {:?}", wind.0);
+    // info!("Wind - {:?}", wind.0);
 
     for mut cell in &mut cells {
         cell.wind = wind.0;

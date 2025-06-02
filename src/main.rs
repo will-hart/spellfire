@@ -14,7 +14,7 @@ mod screens;
 mod theme;
 mod wildfire;
 
-use bevy::{asset::AssetMetaCheck, prelude::*};
+use bevy::{asset::AssetMetaCheck, color::palettes::css::BLACK, prelude::*};
 
 fn main() -> AppExit {
     App::new().add_plugins(AppPlugin).run()
@@ -44,6 +44,8 @@ impl Plugin for AppPlugin {
                     ..default()
                 }),
         );
+
+        app.insert_resource(ClearColor(BLACK.into()));
 
         // Add other plugins.
         app.add_plugins((
