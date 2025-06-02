@@ -25,9 +25,11 @@ fn handle_lightning_strike(
         .find_map(|(s, t)| if t.coords == loc { Some(s) } else { None })
     {
         state.terrain = match state.terrain {
-            TerrainType::Grassland(size) | TerrainType::Tree(size) => TerrainType::Fire(size),
-            TerrainType::Fire(size) => TerrainType::Fire(size + 2),
-            TerrainType::Dirt | TerrainType::Smoldering => state.terrain,
+            TerrainType::Grassland | TerrainType::Tree => TerrainType::Fire,
+            TerrainType::Fire
+            | TerrainType::Dirt
+            | TerrainType::Stone
+            | TerrainType::Smoldering => state.terrain,
         };
     } else {
         warn!("Can't find tile for lightning strike at {loc:?}");
