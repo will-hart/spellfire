@@ -4,6 +4,7 @@
 #![allow(dead_code)]
 
 pub mod interaction;
+pub mod node_builder;
 pub mod palette;
 pub mod widget;
 
