@@ -4,11 +4,10 @@
 
 use bevy::{
     color::palettes::{
-        css::SANDY_BROWN,
+        css::{BLACK, WHITE},
         tailwind::{
-            AMBER_700, AMBER_900, GRAY_200, GRAY_300, GRAY_400, GRAY_500, GREEN_400, GREEN_500,
-            GREEN_600, GREEN_700, LIME_300, LIME_400, LIME_500, LIME_700, ORANGE_600, ORANGE_700,
-            SLATE_800, YELLOW_400, YELLOW_500, YELLOW_600,
+            AMBER_700, AMBER_900, GREEN_900, LIME_600, ORANGE_600, ORANGE_700, SLATE_700,
+            STONE_500, YELLOW_400, YELLOW_500, YELLOW_600, YELLOW_800,
         },
     },
     prelude::*,
@@ -233,7 +232,6 @@ impl CellState for TerrainCellState {
                         item.terrain = TerrainType::Smoldering;
                     }
                 }
-
                 item
             }
             TerrainType::Grassland | TerrainType::Tree => {
@@ -270,18 +268,23 @@ impl CellState for TerrainCellState {
 
     fn color(&self) -> Option<bevy::prelude::Color> {
         Some(match self.terrain {
-            TerrainType::Dirt => SANDY_BROWN.into(),
+            TerrainType::Dirt => Color::Srgba(Srgba {
+                red: 0.37,
+                green: 0.27,
+                blue: 0.08,
+                alpha: 1.0,
+            }),
             TerrainType::Grassland => match self.fuel_load {
-                0 | 1 => LIME_300.into(),
-                2 | 3 => LIME_400.into(),
-                4 | 5 => LIME_500.into(),
-                _ => LIME_700.into(),
+                0 | 1 => LIME_600.mix(&BLACK, 0.05).into(),
+                2 | 3 => LIME_600.into(),
+                4 | 5 => LIME_600.mix(&WHITE, 0.075).into(),
+                _ => LIME_600.mix(&WHITE, 0.1).into(),
             },
             TerrainType::Tree => match self.fuel_load {
-                0..=4 => GREEN_400.into(),
-                5..=7 => GREEN_500.into(),
-                8..=11 => GREEN_600.into(),
-                _ => GREEN_700.into(),
+                0..=4 => GREEN_900.mix(&BLACK, 0.025).into(),
+                5..=7 => GREEN_900.into(),
+                8..=11 => GREEN_900.mix(&WHITE, 0.05).into(),
+                _ => GREEN_900.mix(&WHITE, 0.075).into(),
             },
             TerrainType::Fire => match self.fuel_load {
                 0 => AMBER_900.into(),
@@ -293,12 +296,12 @@ impl CellState for TerrainCellState {
                 _ => YELLOW_400.into(),
             },
             TerrainType::Stone => match self.fuel_load {
-                0 | 1 => GRAY_500.into(),
-                2 | 3 => GRAY_400.into(),
-                4 | 5 => GRAY_300.into(),
-                _ => GRAY_200.into(),
+                0 | 1 => STONE_500.mix(&BLACK, 0.05).into(),
+                2 | 3 => STONE_500.into(),
+                4 | 5 => STONE_500.mix(&WHITE, 0.05).into(),
+                _ => STONE_500.mix(&WHITE, 0.1).into(),
             },
-            TerrainType::Smoldering => SLATE_800.into(),
+            TerrainType::Smoldering => SLATE_700.into(),
         })
     }
 }
