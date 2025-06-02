@@ -227,7 +227,7 @@ impl CellState for TerrainCellState {
             TerrainType::Fire => {
                 let mut item = *self;
                 if rand::rng().random_bool(0.4) {
-                    item.fuel_load = item.fuel_load.checked_sub(1).unwrap_or(0);
+                    item.fuel_load = item.fuel_load.saturating_sub(1);
 
                     if self.fuel_load == 0 {
                         item.terrain = TerrainType::Smoldering;

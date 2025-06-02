@@ -50,14 +50,11 @@ fn handle_camera_zoom_gestures(
     wheel_gestures: Res<MouseWheelGestures>,
     mut camera: Single<&mut Projection, With<MainCamera>>,
 ) {
-    match wheel_gestures.current() {
-        GestureType::Pinch { unscaled_delta } => {
-            if let Projection::Orthographic(ref mut proj) = **camera {
-                proj.scale = (proj.scale + unscaled_delta * proj.scale)
-                    .clamp(wheel_gestures.min_scale, wheel_gestures.max_scale);
-            }
-        }
-        _ => {}
+    if let GestureType::Pinch { unscaled_delta } = wheel_gestures.current()
+        && let Projection::Orthographic(ref mut proj) = **camera
+    {
+        proj.scale = (proj.scale + unscaled_delta * proj.scale)
+            .clamp(wheel_gestures.min_scale, wheel_gestures.max_scale);
     }
 }
 
@@ -65,18 +62,13 @@ fn handle_camera_pan_gestures(
     pan_gestures: Res<MousePanGestures>,
     mut camera: Single<(&mut Transform, &Projection), With<MainCamera>>,
 ) {
-    match pan_gestures.current() {
-        GestureType::Pan { unscaled_delta } => {
-            let (ref mut tx, Projection::Orthographic(proj)) = *camera else {
-                warn!(
-                    "Unable to find orthographic projection for camera in pan_gestures. Aborting"
-                );
-                return;
-            };
+    if let GestureType::Pan { unscaled_delta } = pan_gestures.current() {
+        let (ref mut tx, Projection::Orthographic(proj)) = *camera else {
+            warn!("Unable to find orthographic projection for camera in pan_gestures. Aborting");
+            return;
+        };
 
-            tx.translation += (unscaled_delta * proj.scale).extend(0.0);
-        }
-        _ => {}
+        tx.translation += (unscaled_delta * proj.scale).extend(0.0);
     }
 }
 
