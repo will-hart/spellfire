@@ -137,7 +137,7 @@ fn spawn_map(trigger: Trigger<OnSpawnMap>, mut commands: Commands) {
                         TerrainCellState {
                             terrain,
                             moisture: 0.7,
-                            wind: Vec2::ONE,
+                            wind: Vec2::ONE * 2.0,
                             fuel_load,
                         },
                     ));
@@ -193,6 +193,19 @@ pub enum TerrainType {
     Smoldering,
 }
 
+impl TerrainType {
+    pub fn burn_rate(&self) -> f32 {
+        match self {
+            TerrainType::Fire
+            | TerrainType::Smoldering
+            | TerrainType::Dirt
+            | TerrainType::Stone => 0.0,
+            TerrainType::Grassland => 0.8,
+            TerrainType::Tree => 0.4,
+        }
+    }
+}
+
 /// The state of a given cell in the map
 #[derive(Debug, Copy, Clone, PartialEq, Component, Reflect)]
 #[reflect(Component)]
@@ -208,10 +221,12 @@ impl CellState for TerrainCellState {
         match self.terrain {
             TerrainType::Fire => {
                 let mut item = *self;
-                item.fuel_load = item.fuel_load.checked_sub(1).unwrap_or(0);
+                if rand::rng().random_bool(0.4) {
+                    item.fuel_load = item.fuel_load.checked_sub(1).unwrap_or(0);
 
-                if self.fuel_load == 0 {
-                    item.terrain = TerrainType::Smoldering;
+                    if self.fuel_load == 0 {
+                        item.terrain = TerrainType::Smoldering;
+                    }
                 }
 
                 item
@@ -222,15 +237,20 @@ impl CellState for TerrainCellState {
 
                 for (idx, n) in neighbor_cells.enumerate() {
                     // each neighbouring fire has a chance to set this on fire
-                    if matches!(n.terrain, TerrainType::Fire) {
-                        let neighbour_vec = NEIGHBOUR_VECTOR[idx];
-                        let wind_factor = neighbour_vec.dot(self.wind);
+                    if rng.random_bool(0.18) && matches!(n.terrain, TerrainType::Fire) {
+                        let base_probability = self.terrain.burn_rate();
+
+                        let wind_angle = self.wind.angle_to(NEIGHBOUR_VECTOR[idx]);
+                        let wind_strength = self.wind.length();
+                        let wind_factor = (wind_strength * 0.131 * (wind_angle.cos() - 1.0))
+                            * (0.045 * wind_strength).exp();
 
                         let moisture_factor = 1. - self.moisture;
 
-                        let burn_chance = (0.58 * (1. + moisture_factor) * (1. + wind_factor))
-                            .clamp(0.0, 1.0) as f64
-                            * rng.random::<f64>();
+                        let burn_chance =
+                            (base_probability * (1. + moisture_factor) * (1. + wind_factor))
+                                .clamp(0.0, 1.0) as f64
+                                * rng.random::<f64>();
                         if rng.random_bool(burn_chance) {
                             item.terrain = TerrainType::Fire;
                         }
