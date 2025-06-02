@@ -5,7 +5,6 @@ use bevy::prelude::*;
 use crate::{
     asset_tracking::LoadResource,
     audio::music,
-    demo::player::{PlayerAssets, player},
     screens::Screen,
     wildfire::{OnSpawnMap, SpawnedMap},
 };
@@ -34,24 +33,16 @@ impl FromWorld for LevelAssets {
 }
 
 /// A system that spawns the main level.
-pub fn spawn_level(
-    mut commands: Commands,
-    level_assets: Res<LevelAssets>,
-    player_assets: Res<PlayerAssets>,
-    mut texture_atlas_layouts: ResMut<Assets<TextureAtlasLayout>>,
-) {
+pub fn spawn_level(mut commands: Commands, level_assets: Res<LevelAssets>) {
     commands.spawn((
         Name::new("Level"),
         Transform::default(),
         Visibility::default(),
         StateScoped(Screen::Gameplay),
-        children![
-            player(400.0, &player_assets, &mut texture_atlas_layouts),
-            (
-                Name::new("Gameplay Music"),
-                music(level_assets.music.clone())
-            )
-        ],
+        children![(
+            Name::new("Gameplay Music"),
+            music(level_assets.music.clone())
+        )],
     ));
 
     commands.trigger(OnSpawnMap {
