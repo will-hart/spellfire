@@ -15,9 +15,16 @@ use crate::{
     wildfire::{GameMap, OnLightningStrike, WindDirection},
 };
 
+mod building;
+
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<EnergyTextMarker>();
+    app.register_type::<CursorMode>();
     app.register_type::<PlayerResources>();
+
+    app.init_resource::<CursorMode>();
+
+    app.add_plugins(building::plugin);
 
     app.add_systems(
         OnEnter(Screen::Gameplay),
@@ -54,6 +61,14 @@ pub(super) fn plugin(app: &mut App) {
 
     app.add_systems(
         Update,
+        cancel_cursor_mode
+            .run_if(in_state(Screen::Gameplay).and(
+                input_just_pressed(KeyCode::Space).or(input_just_pressed(MouseButton::Right)),
+            )),
+    );
+
+    app.add_systems(
+        Update,
         update_toolbar.run_if(in_state(Pause(false)).and(resource_exists::<PlayerResources>)),
     );
 }
@@ -61,13 +76,21 @@ pub(super) fn plugin(app: &mut App) {
 #[derive(Resource, Reflect, Debug, Clone)]
 #[reflect(Resource)]
 pub struct PlayerResources {
-    pub energy: u32,
+    pub mana: u32,
 }
 
 impl Default for PlayerResources {
     fn default() -> Self {
-        Self { energy: 15 }
+        Self { mana: 15 }
     }
+}
+
+#[derive(Resource, Reflect, Debug, Clone, Default)]
+#[reflect(Resource)]
+pub enum CursorMode {
+    #[default]
+    Camera,
+    PlaceManaForge,
 }
 
 fn unpause(mut next_pause: ResMut<NextState<Pause>>) {
@@ -189,7 +212,7 @@ fn update_toolbar(
         String::new()
     };
 
-    energy_text.0 = format!("ENERGY: {}", player_resource.energy);
+    energy_text.0 = format!("MANA: {}", player_resource.mana);
     wind_text.0 = format!(
         " | WIND: From {} / {} | {cell_state}",
         match CompassOctant::from(Dir2::new(wind.0).expect("to dir")) {
@@ -213,10 +236,16 @@ fn spawn_building_bar(mut commands: Commands) {
             StateScoped(Screen::Gameplay),
         ))
         .with_children(|builder| {
-            builder
-                .spawn(toolbar_button("LEY"))
-                .observe(|_trigger: Trigger<Pointer<Click>>| {
-                    info!("CLICKED");
-                });
+            builder.spawn(toolbar_button("Mana Forge")).observe(
+                |_trigger: Trigger<Pointer<Click>>, mut mode: ResMut<CursorMode>| {
+                    info!("Placing Mana Forge");
+                    *mode = CursorMode::PlaceManaForge;
+                },
+            );
         });
+}
+
+fn cancel_cursor_mode(mut mode: ResMut<CursorMode>) {
+    info!("Resetting cursor mode");
+    *mode = CursorMode::Camera;
 }
