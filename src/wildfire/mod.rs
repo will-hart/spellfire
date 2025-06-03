@@ -6,7 +6,7 @@ use bevy::{
     color::palettes::{
         css::{BLACK, WHITE},
         tailwind::{
-            AMBER_700, AMBER_900, GREEN_900, LIME_600, ORANGE_600, ORANGE_700, SLATE_700,
+            AMBER_700, AMBER_900, GREEN_900, LIME_500, LIME_600, ORANGE_600, ORANGE_700, SLATE_700,
             STONE_500, YELLOW_400, YELLOW_500, YELLOW_600,
         },
     },
@@ -15,7 +15,7 @@ use bevy::{
 use bevy_life::{Cell, CellState, CellularAutomatonPlugin, LifeSystemSet};
 use rand::Rng;
 
-use crate::{Pause, input::MousePosition, wildfire::mapgen::NoiseMap};
+use crate::{Pause, input::MousePosition, wildfire::mapgen::Map};
 
 mod lightning;
 mod mapgen;
@@ -124,7 +124,7 @@ fn spawn_map(trigger: Trigger<OnSpawnMap>, mut commands: Commands) {
     let size_y = data.size.y;
     let sprite_size = data.sprite_size;
 
-    let noise = NoiseMap::new();
+    let map = Map::new(size_x as usize, size_y as usize);
 
     commands
         .spawn((
@@ -137,11 +137,9 @@ fn spawn_map(trigger: Trigger<OnSpawnMap>, mut commands: Commands) {
             ),
             Visibility::default(),
         ))
-        .with_children(|builder| {
-            for y in 0..=size_y {
-                for x in 0..=size_x {
-                    let (terrain, fuel_load) = noise.sample(x, y);
-
+        .with_children(move |builder| {
+            for y in 0..size_y {
+                for x in 0..size_x {
                     builder.spawn((
                         Sprite {
                             custom_size: Some(Vec2::splat(sprite_size)),
@@ -151,12 +149,7 @@ fn spawn_map(trigger: Trigger<OnSpawnMap>, mut commands: Commands) {
                         TerrainCell {
                             coords: IVec2::new(x as i32, y as i32),
                         },
-                        TerrainCellState {
-                            terrain,
-                            moisture: 0.7,
-                            wind: Vec2::ONE * 2.0,
-                            fuel_load,
-                        },
+                        map.data[y as usize][x as usize],
                     ));
                 }
             }
@@ -200,12 +193,13 @@ impl Cell for TerrainCell {
 }
 
 /// A type of terrain
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Reflect)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Reflect, Default)]
 pub enum TerrainType {
     Dirt,
-    Stone,
+    #[default]
     Grassland,
     Tree,
+    Stone,
     Fire,
     Smoldering,
 }
@@ -229,7 +223,7 @@ impl std::fmt::Display for TerrainType {
             f,
             "{}",
             match self {
-                TerrainType::Dirt => "Bare Earth",
+                TerrainType::Dirt => "Earth",
                 TerrainType::Stone => "Stone",
                 TerrainType::Grassland => "Grass",
                 TerrainType::Tree => "Forest",
@@ -241,7 +235,7 @@ impl std::fmt::Display for TerrainType {
 }
 
 /// The state of a given cell in the map
-#[derive(Debug, Copy, Clone, PartialEq, Component, Reflect)]
+#[derive(Debug, Copy, Clone, PartialEq, Component, Reflect, Default)]
 #[reflect(Component)]
 pub struct TerrainCellState {
     pub terrain: TerrainType,
@@ -252,7 +246,37 @@ pub struct TerrainCellState {
 
 impl std::fmt::Display for TerrainCellState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.terrain)
+        match self.terrain {
+            TerrainType::Grassland | TerrainType::Tree => {
+                write!(
+                    f,
+                    "{}{}{}",
+                    if matches!(self.terrain, TerrainType::Grassland) {
+                        if self.fuel_load < 3 {
+                            "Short "
+                        } else if self.fuel_load > 8 {
+                            "Long "
+                        } else {
+                            ""
+                        }
+                    } else {
+                        ""
+                    },
+                    if self.moisture < 0.3 {
+                        "Dry "
+                    } else if self.moisture > 0.8 {
+                        "Wet "
+                    } else {
+                        ""
+                    },
+                    self.terrain,
+                )
+            }
+            TerrainType::Dirt
+            | TerrainType::Stone
+            | TerrainType::Fire
+            | TerrainType::Smoldering => write!(f, "{}", self.terrain),
+        }
     }
 }
 
@@ -311,10 +335,10 @@ impl CellState for TerrainCellState {
                 alpha: 1.0,
             }),
             TerrainType::Grassland => match self.fuel_load {
-                0 | 1 => LIME_600.mix(&BLACK, 0.05).into(),
-                2 | 3 => LIME_600.into(),
-                4 | 5 => LIME_600.mix(&WHITE, 0.075).into(),
-                _ => LIME_600.mix(&WHITE, 0.1).into(),
+                0 | 1 => LIME_500.mix(&WHITE, 0.03).into(),
+                2 | 3 => LIME_500.into(),
+                4 | 5 => LIME_500.mix(&BLACK, 0.025).into(),
+                _ => LIME_500.mix(&BLACK, 0.05).into(),
             },
             TerrainType::Tree => match self.fuel_load {
                 0..=4 => GREEN_900.mix(&BLACK, 0.025).into(),
