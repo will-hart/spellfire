@@ -4,7 +4,7 @@ use bevy::prelude::*;
 
 use crate::{
     asset_tracking::LoadResource,
-    screens::Screen,
+    screens::{PlayerResources, Screen},
     wildfire::{OnSpawnMap, SpawnedMap},
 };
 
@@ -37,6 +37,8 @@ pub fn spawn_level(mut commands: Commands) {
         size: UVec2::splat(256),
         sprite_size: 4.0,
     });
+
+    commands.init_resource::<PlayerResources>();
 }
 
 fn despawn_maps(mut commands: Commands, maps: Query<Entity, With<SpawnedMap>>) {
@@ -45,4 +47,5 @@ fn despawn_maps(mut commands: Commands, maps: Query<Entity, With<SpawnedMap>>) {
     }
 
     commands.remove_resource::<OnSpawnMap>();
+    commands.remove_resource::<PlayerResources>();
 }

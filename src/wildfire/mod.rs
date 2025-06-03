@@ -7,7 +7,7 @@ use bevy::{
         css::{BLACK, WHITE},
         tailwind::{
             AMBER_700, AMBER_900, GREEN_900, LIME_600, ORANGE_600, ORANGE_700, SLATE_700,
-            STONE_500, YELLOW_400, YELLOW_500, YELLOW_600, YELLOW_800,
+            STONE_500, YELLOW_400, YELLOW_500, YELLOW_600,
         },
     },
     prelude::*,
@@ -15,13 +15,14 @@ use bevy::{
 use bevy_life::{Cell, CellState, CellularAutomatonPlugin, LifeSystemSet};
 use rand::Rng;
 
-use crate::{Pause, wildfire::mapgen::NoiseMap};
+use crate::{Pause, input::MousePosition, wildfire::mapgen::NoiseMap};
 
 mod lightning;
 mod mapgen;
 mod wind;
 
 pub use lightning::OnLightningStrike;
+pub use wind::WindDirection;
 
 /// the amount of cells in the neighbourhood
 const NEIGHBOURHOOD_SIZE: usize = 8;
@@ -96,6 +97,18 @@ pub fn plugin(app: &mut App) {
 pub struct OnSpawnMap {
     pub size: UVec2,
     pub sprite_size: f32,
+}
+
+impl OnSpawnMap {
+    pub fn tile_coords(&self, mouse: &MousePosition) -> IVec2 {
+        let offset_x = self.size.x as f32 * self.sprite_size * 0.5;
+        let offset_y = self.size.y as f32 * self.sprite_size * 0.5;
+
+        let x = ((mouse.world_pos.x + offset_x) / self.sprite_size).floor() as i32;
+        let y = ((mouse.world_pos.y + offset_y) / self.sprite_size).floor() as i32;
+
+        IVec2::new(x, y)
+    }
 }
 
 #[derive(Component, Debug, Clone, Copy, Reflect)]
@@ -210,6 +223,23 @@ impl TerrainType {
     }
 }
 
+impl std::fmt::Display for TerrainType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                TerrainType::Dirt => "Bare Earth",
+                TerrainType::Stone => "Stone",
+                TerrainType::Grassland => "Grass",
+                TerrainType::Tree => "Forest",
+                TerrainType::Fire => "Fire",
+                TerrainType::Smoldering => "Burnt Ground",
+            }
+        )
+    }
+}
+
 /// The state of a given cell in the map
 #[derive(Debug, Copy, Clone, PartialEq, Component, Reflect)]
 #[reflect(Component)]
@@ -218,6 +248,12 @@ pub struct TerrainCellState {
     pub wind: Vec2,
     pub moisture: f32,
     pub fuel_load: u8,
+}
+
+impl std::fmt::Display for TerrainCellState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.terrain)
+    }
 }
 
 impl CellState for TerrainCellState {
