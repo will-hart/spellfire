@@ -3,7 +3,7 @@
 
 use bevy::prelude::*;
 
-use crate::wildfire::{TerrainCell, TerrainCellState, TerrainType};
+use crate::wildfire::{TerrainType, map::GameMap};
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<OnLightningStrike>();
@@ -14,24 +14,18 @@ pub(super) fn plugin(app: &mut App) {
 #[derive(Debug, Clone, Event, Reflect)]
 pub struct OnLightningStrike(pub IVec2);
 
-fn handle_lightning_strike(
-    trigger: Trigger<OnLightningStrike>,
-    mut tiles: Query<(&mut TerrainCellState, &TerrainCell)>,
-) {
+fn handle_lightning_strike(trigger: Trigger<OnLightningStrike>, mut map: ResMut<GameMap>) {
     let loc = trigger.event().0;
+    let Some(cell) = map.get_mut(loc) else {
+        info!("Unable to find cell for lightning strike at {loc:?}");
+        return;
+    };
 
-    if let Some(mut state) = tiles
-        .iter_mut()
-        .find_map(|(s, t)| if t.coords == loc { Some(s) } else { None })
-    {
-        state.terrain = match state.terrain {
-            TerrainType::Grassland | TerrainType::Tree => TerrainType::Fire,
-            TerrainType::Fire
-            | TerrainType::Dirt
-            | TerrainType::Stone
-            | TerrainType::Smoldering => state.terrain,
-        };
-    } else {
-        warn!("Can't find tile for lightning strike at {loc:?}");
+    match cell.terrain {
+        TerrainType::Grassland | TerrainType::Tree => {
+            cell.terrain = TerrainType::Fire;
+            cell.dirty = true;
+        }
+        TerrainType::Fire | TerrainType::Dirt | TerrainType::Stone | TerrainType::Smoldering => {}
     }
 }

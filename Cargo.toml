@@ -19,11 +19,6 @@ tracing = { version = "0.1", features = [
     "release_max_level_warn",
 ] }
 
-[dependencies.bevy_life]
-git = "https://github.com/ManevilleF/bevy_life"
-rev = "d2f70049d3ffda496fd01ff12bbf29e7d11f115d"
-features = ["auto-coloring"]
-
 [features]
 # Default to a native dev build.
 default = ["dev_native"]

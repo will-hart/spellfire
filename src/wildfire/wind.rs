@@ -3,7 +3,7 @@
 use bevy::prelude::*;
 use rand::Rng;
 
-use crate::{Pause, wildfire::TerrainCellState};
+use crate::Pause;
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<WindDirection>();
@@ -18,16 +18,11 @@ pub struct WindDirection(pub Vec2);
 
 impl Default for WindDirection {
     fn default() -> Self {
-        Self(Vec2::ONE * 2.0)
+        Self(Vec2::ONE * 2000.0)
     }
 }
 
-fn wandery_wind(
-    mut time_left: Local<f32>,
-    time: Res<Time>,
-    mut wind: ResMut<WindDirection>,
-    mut cells: Query<&mut TerrainCellState>,
-) {
+fn wandery_wind(mut time_left: Local<f32>, time: Res<Time>, mut wind: ResMut<WindDirection>) {
     if *time_left <= 0.0 {
         *time_left = 1.0;
     } else {
@@ -45,10 +40,4 @@ fn wandery_wind(
         normed_wind.x + rng.random_range(-0.05..=0.05),
         normed_wind.y + rng.random_range(-0.05..=0.05),
     ) * current_strength;
-
-    // info!("Wind - {:?}", wind.0);
-
-    for mut cell in &mut cells {
-        cell.wind = wind.0;
-    }
 }

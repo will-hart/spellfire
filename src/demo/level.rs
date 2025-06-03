@@ -5,7 +5,7 @@ use bevy::prelude::*;
 use crate::{
     asset_tracking::LoadResource,
     screens::{PlayerResources, Screen},
-    wildfire::{OnSpawnMap, SpawnedMap},
+    wildfire::{GameMap, OnSpawnMap, SpawnedMap},
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -46,6 +46,6 @@ fn despawn_maps(mut commands: Commands, maps: Query<Entity, With<SpawnedMap>>) {
         commands.entity(entity).despawn();
     }
 
-    commands.remove_resource::<OnSpawnMap>();
+    commands.remove_resource::<GameMap>();
     commands.remove_resource::<PlayerResources>();
 }

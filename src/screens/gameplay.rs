@@ -12,7 +12,7 @@ use crate::{
     menus::Menu,
     screens::Screen,
     theme::node_builder::NodeBuilder,
-    wildfire::{OnLightningStrike, OnSpawnMap, TerrainCell, TerrainCellState, WindDirection},
+    wildfire::{GameMap, OnLightningStrike, WindDirection},
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -81,10 +81,10 @@ fn pause(mut next_pause: ResMut<NextState<Pause>>) {
 fn handle_lightning_strike_input(
     mut commands: Commands,
     mouse_pos: Res<MousePosition>,
-    maybe_map: Option<Res<OnSpawnMap>>,
+    maybe_map: Option<Res<GameMap>>,
 ) {
     if let Some(map) = maybe_map {
-        let coords = map.tile_coords(&mouse_pos);
+        let coords = map.tile_coords(mouse_pos.world_pos);
         commands.trigger(OnLightningStrike(coords));
     } else {
         warn!("Skipping lightning strike input as there is no map yet");
@@ -179,24 +179,19 @@ fn update_toolbar(
     player_resource: Res<PlayerResources>,
     wind: Res<WindDirection>,
     mouse: Res<MousePosition>,
-    map: Res<OnSpawnMap>,
+    map: Res<GameMap>,
     mut energy_text: Single<&mut Text, (Without<WindTextMarker>, With<EnergyTextMarker>)>,
     mut wind_text: Single<&mut Text, (Without<EnergyTextMarker>, With<WindTextMarker>)>,
-    tiles: Query<(&TerrainCellState, &TerrainCell)>,
 ) {
-    let loc = map.tile_coords(&mouse);
-    let mouse_over_terrain = if let Some(state) = tiles
-        .iter()
-        .find_map(|(s, t)| if t.coords == loc { Some(s) } else { None })
-    {
-        format!("{}", *state)
+    let cell_state = if let Some(cell) = map.tile_at_world_pos(mouse.world_pos) {
+        format!("{}", *cell)
     } else {
         String::new()
     };
 
     energy_text.0 = format!("ENERGY: {}", player_resource.energy);
     wind_text.0 = format!(
-        " | WIND: From {} | {mouse_over_terrain}",
+        " | WIND: From {} / {} | {cell_state}",
         match CompassOctant::from(Dir2::new(wind.0).expect("to dir")) {
             CompassOctant::North => "N",
             CompassOctant::NorthEast => "NE",
@@ -206,7 +201,8 @@ fn update_toolbar(
             CompassOctant::SouthWest => "SW",
             CompassOctant::West => "W",
             CompassOctant::NorthWest => "NW",
-        }
+        },
+        wind.0
     );
 }
 
