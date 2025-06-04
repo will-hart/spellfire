@@ -194,6 +194,27 @@ impl GameMap {
         }
     }
 
+    /// Checks whether the cell at the given tile coords is on fire
+    pub fn is_on_fire(&self, loc: IVec2) -> bool {
+        if let Some(cell) = self.get(loc) {
+            match cell.terrain {
+                TerrainType::Fire => true,
+                _ => false,
+            }
+        } else {
+            false
+        }
+    }
+
+    /// Gets an immutable ref to the cell at the given location, if there is one
+    pub fn get(&self, loc: IVec2) -> Option<&TerrainCellState> {
+        if loc.x < 0 || loc.x >= self.size_x as i32 || loc.y < 0 || loc.y >= self.size_y as i32 {
+            return None;
+        }
+
+        Some(&self.data[loc.y as usize][loc.x as usize])
+    }
+
     /// Gets a mutable ref to the cell at the given location, if there is one
     pub fn get_mut(&mut self, loc: IVec2) -> Option<&mut TerrainCellState> {
         if loc.x < 0 || loc.x >= self.size_x as i32 || loc.y < 0 || loc.y >= self.size_y as i32 {
