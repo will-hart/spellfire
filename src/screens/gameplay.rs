@@ -4,6 +4,7 @@ use bevy::{
     color::palettes::tailwind::SLATE_800, input::common_conditions::input_just_pressed,
     math::CompassOctant, prelude::*, ui::Val::*,
 };
+use bevy_simple_subsecond_system::prelude::*;
 
 use crate::{
     Pause,
@@ -20,6 +21,7 @@ mod building;
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<EnergyTextMarker>();
     app.register_type::<CursorMode>();
+    app.register_type::<CursorModeItem>();
     app.register_type::<PlayerResources>();
 
     app.init_resource::<CursorMode>();
@@ -69,7 +71,10 @@ pub(super) fn plugin(app: &mut App) {
 
     app.add_systems(
         Update,
-        update_toolbar.run_if(in_state(Pause(false)).and(resource_exists::<PlayerResources>)),
+        (
+            update_toolbar.run_if(in_state(Pause(false)).and(resource_exists::<PlayerResources>)),
+            handle_cursor_mode_change.run_if(resource_changed::<CursorMode>),
+        ),
     );
 }
 
@@ -229,6 +234,7 @@ fn update_toolbar(
     );
 }
 
+#[hot]
 fn spawn_building_bar(mut commands: Commands) {
     commands
         .spawn((
@@ -238,7 +244,7 @@ fn spawn_building_bar(mut commands: Commands) {
         .with_children(|builder| {
             builder.spawn(toolbar_button("Mana Forge")).observe(
                 |_trigger: Trigger<Pointer<Click>>, mut mode: ResMut<CursorMode>| {
-                    info!("Placing Mana Forge");
+                    info!("Placing Maa Forge");
                     *mode = CursorMode::PlaceManaForge;
                 },
             );
@@ -248,4 +254,25 @@ fn spawn_building_bar(mut commands: Commands) {
 fn cancel_cursor_mode(mut mode: ResMut<CursorMode>) {
     info!("Resetting cursor mode");
     *mode = CursorMode::Camera;
+}
+
+#[derive(Component, Reflect, Debug, Clone, Default)]
+#[reflect(Component)]
+pub struct CursorModeItem;
+
+#[hot]
+fn handle_cursor_mode_change(
+    mut commands: Commands,
+    cursor_mode: Res<CursorMode>,
+    previous_items: Query<Entity, With<CursorModeItem>>,
+) {
+    // despawn previous entities
+    for entity in &previous_items {
+        commands.entity(entity).despawn();
+    }
+
+    match *cursor_mode {
+        CursorMode::Camera => {}
+        CursorMode::PlaceManaForge => {}
+    }
 }

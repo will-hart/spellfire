@@ -6,6 +6,7 @@ edition = "2024"
 
 [dependencies]
 bevy = { version = "0.16", features = ["wayland"] }
+bevy_simple_subsecond_system = "0.2.0"
 fastnoise-lite = "1.1"
 # Compile low-severity logs out of native builds for performance.
 log = { version = "0.4", features = [
@@ -24,7 +25,7 @@ tracing = { version = "0.1", features = [
 default = ["dev_native"]
 dev = [
     # Improve compile times for dev builds by linking Bevy as a dynamic library.
-    "bevy/dynamic_linking",
+    # "bevy/dynamic_linking",
     "bevy/bevy_dev_tools",
     "bevy/bevy_ui_debug",
     # Improve error messages coming from Bevy
@@ -77,6 +78,7 @@ nonstandard_macro_braces = "warn"
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]
 opt-level = 1
+codegen-units = 1
 
 # Enable a large amount of optimization in the dev profile for dependencies.
 [profile.dev.package."*"]
@@ -113,3 +115,13 @@ codegen-units = 4
 
 [profile.ci.package."*"]
 opt-level = 0
+
+[profile.wasm-dev]
+inherits = "dev"
+opt-level = 1
+
+[profile.server-dev]
+inherits = "dev"
+
+[profile.android-dev]
+inherits = "dev"

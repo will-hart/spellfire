@@ -15,6 +15,7 @@ mod theme;
 mod wildfire;
 
 use bevy::{asset::AssetMetaCheck, color::palettes::css::BLACK, prelude::*};
+use bevy_simple_subsecond_system::prelude::*;
 
 fn main() -> AppExit {
     App::new().add_plugins(AppPlugin).run()
@@ -59,6 +60,8 @@ impl Plugin for AppPlugin {
             screens::plugin,
             theme::plugin,
         ));
+
+        app.add_plugins(SimpleSubsecondPlugin::default());
 
         // add logic plugins
         app.add_plugins(wildfire::plugin);
