@@ -15,6 +15,7 @@ mod theme;
 mod wildfire;
 
 use bevy::{asset::AssetMetaCheck, color::palettes::css::BLACK, prelude::*};
+#[cfg(target_os = "macos")]
 use bevy_simple_subsecond_system::prelude::*;
 
 fn main() -> AppExit {
@@ -61,6 +62,7 @@ impl Plugin for AppPlugin {
             theme::plugin,
         ));
 
+        #[cfg(target_os = "macos")]
         app.add_plugins(SimpleSubsecondPlugin::default());
 
         // add logic plugins

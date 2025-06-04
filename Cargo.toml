@@ -29,7 +29,6 @@ bevy = { version = "0.16", default-features = false, features = [
     "vorbis",
     "webgl2"
 ] }
-bevy_simple_subsecond_system = "0.2.0"
 fastnoise-lite = "1.1"
 # Compile low-severity logs out of native builds for performance.
 log = { version = "0.4", features = [
@@ -42,6 +41,9 @@ tracing = { version = "0.1", features = [
     "max_level_debug",
     "release_max_level_warn",
 ] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+bevy_simple_subsecond_system = "0.2.0"
 
 [features]
 # Default to a native dev build.

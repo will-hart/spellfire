@@ -4,6 +4,8 @@ use bevy::{
     color::palettes::tailwind::SLATE_800, input::common_conditions::input_just_pressed,
     math::CompassOctant, prelude::*, ui::Val::*,
 };
+
+#[cfg(target_os = "macos")]
 use bevy_simple_subsecond_system::prelude::*;
 
 use crate::{
@@ -241,7 +243,7 @@ fn update_toolbar(
 #[reflect(Component)]
 pub struct BuildingBar;
 
-#[hot]
+#[cfg_attr(target_os = "macos", hot)]
 fn draw_building_bar(
     mut commands: Commands,
     mode: Res<BuildingMode>,
@@ -284,7 +286,7 @@ fn cancel_cursor_mode(mut mode: ResMut<BuildingMode>) {
 #[reflect(Component)]
 pub struct CursorModeItem;
 
-#[hot]
+#[cfg_attr(target_os = "macos", hot)]
 fn handle_build_mode_change(
     mut commands: Commands,
     previous_items: Query<Entity, With<CursorModeItem>>,
