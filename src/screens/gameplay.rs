@@ -11,7 +11,7 @@ use crate::{
     demo::level::spawn_level,
     input::MousePosition,
     menus::Menu,
-    screens::Screen,
+    screens::{Screen, gameplay::building::SpawnManaForge},
     theme::node_builder::NodeBuilder,
     wildfire::{GameMap, OnLightningStrike, WindDirection},
 };
@@ -20,17 +20,18 @@ mod building;
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<EnergyTextMarker>();
-    app.register_type::<CursorMode>();
+    app.register_type::<BuildingMode>();
     app.register_type::<CursorModeItem>();
     app.register_type::<PlayerResources>();
+    app.register_type::<BuildingBar>();
 
-    app.init_resource::<CursorMode>();
+    app.init_resource::<BuildingMode>();
 
     app.add_plugins(building::plugin);
 
     app.add_systems(
         OnEnter(Screen::Gameplay),
-        (spawn_level, spawn_toolbar, spawn_building_bar),
+        (spawn_level, spawn_toolbar, draw_building_bar),
     );
 
     // Toggle pause on key press.
@@ -57,12 +58,6 @@ pub(super) fn plugin(app: &mut App) {
 
     app.add_systems(
         Update,
-        handle_lightning_strike_input
-            .run_if(in_state(Screen::Gameplay).and(input_just_pressed(MouseButton::Left))),
-    );
-
-    app.add_systems(
-        Update,
         cancel_cursor_mode
             .run_if(in_state(Screen::Gameplay).and(
                 input_just_pressed(KeyCode::Space).or(input_just_pressed(MouseButton::Right)),
@@ -72,9 +67,14 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(
         Update,
         (
-            update_toolbar.run_if(in_state(Pause(false)).and(resource_exists::<PlayerResources>)),
-            handle_cursor_mode_change.run_if(resource_changed::<CursorMode>),
-        ),
+            update_toolbar.run_if(resource_exists::<PlayerResources>),
+            handle_mouse_click_input.run_if(input_just_pressed(MouseButton::Left)),
+            handle_build_mode_change
+                .run_if(resource_changed::<BuildingMode>)
+                .after(cancel_cursor_mode),
+        )
+            .chain()
+            .run_if(in_state(Screen::Gameplay).and(in_state(Pause(false)))),
     );
 }
 
@@ -92,9 +92,9 @@ impl Default for PlayerResources {
 
 #[derive(Resource, Reflect, Debug, Clone, Default)]
 #[reflect(Resource)]
-pub enum CursorMode {
+pub enum BuildingMode {
     #[default]
-    Camera,
+    None,
     PlaceManaForge,
 }
 
@@ -106,16 +106,25 @@ fn pause(mut next_pause: ResMut<NextState<Pause>>) {
     next_pause.set(Pause(true));
 }
 
-fn handle_lightning_strike_input(
+fn handle_mouse_click_input(
     mut commands: Commands,
-    mouse_pos: Res<MousePosition>,
+    mut mode: ResMut<BuildingMode>,
+    mouse: Res<MousePosition>,
     maybe_map: Option<Res<GameMap>>,
 ) {
-    if let Some(map) = maybe_map {
-        let coords = map.tile_coords(mouse_pos.world_pos);
-        commands.trigger(OnLightningStrike(coords));
-    } else {
-        warn!("Skipping lightning strike input as there is no map yet");
+    match *mode {
+        BuildingMode::None => {
+            if let Some(map) = maybe_map {
+                let coords = map.tile_coords(mouse.world_pos);
+                commands.trigger(OnLightningStrike(coords));
+            } else {
+                warn!("Skipping lightning strike input as there is no map yet");
+            }
+        }
+        BuildingMode::PlaceManaForge => {
+            commands.queue(SpawnManaForge(mouse.world_pos));
+            *mode = BuildingMode::None;
+        }
     }
 }
 
@@ -163,18 +172,12 @@ fn toolbar_node() -> NodeBuilder {
 fn toolbar_button(text: impl Into<String>) -> impl Bundle {
     (
         NodeBuilder::new()
-            .width(Val::Px(100.0))
+            // .width(Val::Px(200.0))
             .height(Val::Px(32.0))
             .center_content()
             .build(),
         Button,
-        children![
-            Text::new(text),
-            TextFont {
-                font_size: 12.0,
-                ..default()
-            }
-        ],
+        children![(Text::new(text), TextFont::from_font_size(12.0))],
     )
 }
 
@@ -234,26 +237,47 @@ fn update_toolbar(
     );
 }
 
+#[derive(Component, Reflect, Debug, Clone, Default)]
+#[reflect(Component)]
+pub struct BuildingBar;
+
 #[hot]
-fn spawn_building_bar(mut commands: Commands) {
+fn draw_building_bar(
+    mut commands: Commands,
+    mode: Res<BuildingMode>,
+    previous_items: Query<Entity, With<BuildingBar>>,
+) {
+    for entity in &previous_items {
+        commands.entity(entity).despawn();
+    }
+
     commands
         .spawn((
             toolbar_node().bottom(0.0).build(),
             StateScoped(Screen::Gameplay),
+            BuildingBar,
         ))
-        .with_children(|builder| {
-            builder.spawn(toolbar_button("Mana Forge")).observe(
-                |_trigger: Trigger<Pointer<Click>>, mut mode: ResMut<CursorMode>| {
-                    info!("Placing Maa Forge");
-                    *mode = CursorMode::PlaceManaForge;
-                },
-            );
+        .with_children(|builder| match *mode {
+            BuildingMode::None => {
+                builder.spawn(toolbar_button("Mana Forge")).observe(
+                    |_trigger: Trigger<Pointer<Click>>, mut mode: ResMut<BuildingMode>| {
+                        info!("Placing Maa Forge");
+                        *mode = BuildingMode::PlaceManaForge;
+                    },
+                );
+            }
+            BuildingMode::PlaceManaForge => {
+                builder.spawn((
+                    Text::new("Click the map to place a forge. Press <space> to cancel placement."),
+                    TextFont::from_font_size(14.0),
+                ));
+            }
         });
 }
 
-fn cancel_cursor_mode(mut mode: ResMut<CursorMode>) {
-    info!("Resetting cursor mode");
-    *mode = CursorMode::Camera;
+fn cancel_cursor_mode(mut mode: ResMut<BuildingMode>) {
+    info!("Resetting curs mode");
+    *mode = BuildingMode::None;
 }
 
 #[derive(Component, Reflect, Debug, Clone, Default)]
@@ -261,9 +285,8 @@ fn cancel_cursor_mode(mut mode: ResMut<CursorMode>) {
 pub struct CursorModeItem;
 
 #[hot]
-fn handle_cursor_mode_change(
+fn handle_build_mode_change(
     mut commands: Commands,
-    cursor_mode: Res<CursorMode>,
     previous_items: Query<Entity, With<CursorModeItem>>,
 ) {
     // despawn previous entities
@@ -271,8 +294,7 @@ fn handle_cursor_mode_change(
         commands.entity(entity).despawn();
     }
 
-    match *cursor_mode {
-        CursorMode::Camera => {}
-        CursorMode::PlaceManaForge => {}
-    }
+    commands.run_system_cached(draw_building_bar);
+
+    // TODO spawn cursor/buldling placement items
 }

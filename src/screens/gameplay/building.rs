@@ -2,7 +2,11 @@
 
 use bevy::prelude::*;
 
-use crate::{Pause, screens::PlayerResources, wildfire::GameMap};
+use crate::{
+    Pause,
+    screens::{PlayerResources, Screen},
+    wildfire::GameMap,
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<BuildingLocation>();
@@ -10,8 +14,26 @@ pub(super) fn plugin(app: &mut App) {
 
     app.add_systems(
         Update,
-        mana_forge.run_if(in_state(Pause(false)).and(resource_exists::<PlayerResources>)),
+        (produce_from_mana_forge, blow_up_mana_forge).run_if(
+            in_state(Pause(false))
+                .and(in_state(Screen::Gameplay))
+                .and(resource_exists::<PlayerResources>),
+        ),
     );
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct SpawnManaForge(pub Vec2);
+
+impl Command for SpawnManaForge {
+    fn apply(self, world: &mut World) -> () {
+        let _ = world.run_system_cached_with(spawn_mana_forge, self);
+    }
+}
+
+fn spawn_mana_forge(In(config): In<SpawnManaForge>, map: Res<GameMap>) {
+    let coords = map.tile_coords(config.0);
+    info!("spawning mana foge at {coords}");
 }
 
 #[derive(Component, Reflect, Debug, Copy, Clone)]
@@ -27,7 +49,7 @@ pub struct ManaForge {
     time_since_last_tick: f32,
 }
 
-fn mana_forge(
+fn produce_from_mana_forge(
     time: Res<Time>,
     mut player: ResMut<PlayerResources>,
     mut forges: Query<&mut ManaForge>,
