@@ -29,6 +29,7 @@ bevy = { version = "0.16", default-features = false, features = [
     "vorbis",
     "webgl2"
 ] }
+bevy_vector_shapes = "0.10.0"
 fastnoise-lite = "1.1"
 # Compile low-severity logs out of native builds for performance.
 log = { version = "0.4", features = [
