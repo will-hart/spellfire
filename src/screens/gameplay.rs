@@ -100,6 +100,7 @@ impl Default for PlayerResources {
 pub enum BuildingMode {
     #[default]
     None,
+    Lightning,
     PlaceManaForge,
     PlaceMinotaur,
 }
@@ -119,7 +120,8 @@ fn handle_mouse_click_input(
     maybe_map: Option<Res<GameMap>>,
 ) {
     match *mode {
-        BuildingMode::None => {
+        BuildingMode::None => {}
+        BuildingMode::Lightning => {
             if let Some(map) = maybe_map {
                 let coords = map.tile_coords(mouse.world_pos);
                 commands.trigger(OnLightningStrike(coords));
@@ -183,6 +185,7 @@ fn toolbar_button(text: impl Into<String>) -> impl Bundle {
             // .width(Val::Px(200.0))
             .height(Val::Px(32.0))
             .center_content()
+            .margin(UiRect::right(Val::Px(10.0)))
             .build(),
         Button,
         children![(Text::new(text), TextFont::from_font_size(12.0))],
@@ -267,6 +270,12 @@ fn draw_building_bar(
         ))
         .with_children(|builder| match *mode {
             BuildingMode::None => {
+                builder.spawn(toolbar_button("Lightning Bolt")).observe(
+                    |_trigger: Trigger<Pointer<Click>>, mut mode: ResMut<BuildingMode>| {
+                        info!("Placing Lightning");
+                        *mode = BuildingMode::Lightning;
+                    },
+                );
                 builder.spawn(toolbar_button("Mana Forge (50)")).observe(
                     |_trigger: Trigger<Pointer<Click>>, mut mode: ResMut<BuildingMode>| {
                         info!("Placing Mana Forge");
@@ -279,6 +288,9 @@ fn draw_building_bar(
                         *mode = BuildingMode::PlaceMinotaur;
                     },
                 );
+            }
+            BuildingMode::Lightning => {
+                builder.spawn((Text::new("Click to start some fires (you pyro). Press <space> to cancel."), TextFont::from_font_size(12.0)));
             }
             BuildingMode::PlaceManaForge => {
                 builder.spawn((
@@ -318,7 +330,7 @@ fn handle_build_mode_change(
     }
 
     match *mode {
-        BuildingMode::None | BuildingMode::PlaceManaForge => {}
+        BuildingMode::None | BuildingMode::Lightning | BuildingMode::PlaceManaForge => {}
         BuildingMode::PlaceMinotaur => {
             commands.insert_resource(ParentManaForge(None));
         }

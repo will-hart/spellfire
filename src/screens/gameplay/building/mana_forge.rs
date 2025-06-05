@@ -74,7 +74,7 @@ fn spawn_mana_forge(
         Sprite {
             image: buildings.mana_forge.clone(),
             custom_size: Some(Vec2::splat(16.0)),
-            anchor: Anchor::TopLeft,
+            anchor: Anchor::Center,
             ..default()
         },
     ));

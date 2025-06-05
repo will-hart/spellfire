@@ -10,6 +10,7 @@ Building placement
 
 - [ ] disable invalid buttons (i.e. not enough resources)
 - [ ] place buildings only when in range of a mana forge
+- [ ] make sure building sprites are centered on grid coords
 
 Victory conditions
 
