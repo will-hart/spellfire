@@ -1,18 +1,43 @@
 //! The screen state for the main gameplay.
 
-use bevy::{input::common_conditions::input_just_pressed, prelude::*, ui::Val::*};
+use bevy::{
+    color::palettes::tailwind::SLATE_800, input::common_conditions::input_just_pressed,
+    math::CompassOctant, prelude::*, ui::Val::*,
+};
+
+#[cfg(target_os = "macos")]
+use bevy_simple_subsecond_system::prelude::*;
 
 use crate::{
     Pause,
     demo::level::spawn_level,
     input::MousePosition,
     menus::Menu,
-    screens::Screen,
-    wildfire::{OnLightningStrike, OnSpawnMap},
+    screens::{
+        Screen,
+        gameplay::building::{ParentManaForge, SpawnManaForge, SpawnMinotaur},
+    },
+    theme::node_builder::NodeBuilder,
+    wildfire::{GameMap, OnLightningStrike, WindDirection},
 };
 
+mod building;
+
 pub(super) fn plugin(app: &mut App) {
-    app.add_systems(OnEnter(Screen::Gameplay), spawn_level);
+    app.register_type::<EnergyTextMarker>();
+    app.register_type::<BuildingMode>();
+    app.register_type::<CursorModeItem>();
+    app.register_type::<PlayerResources>();
+    app.register_type::<BuildingBar>();
+
+    app.init_resource::<BuildingMode>();
+
+    app.add_plugins(building::plugin);
+
+    app.add_systems(
+        OnEnter(Screen::Gameplay),
+        (spawn_level, spawn_toolbar, draw_building_bar),
+    );
 
     // Toggle pause on key press.
     app.add_systems(
@@ -38,9 +63,46 @@ pub(super) fn plugin(app: &mut App) {
 
     app.add_systems(
         Update,
-        handle_lightning_strike_input
-            .run_if(in_state(Screen::Gameplay).and(input_just_pressed(MouseButton::Left))),
+        cancel_cursor_mode
+            .run_if(in_state(Screen::Gameplay).and(
+                input_just_pressed(KeyCode::Space).or(input_just_pressed(MouseButton::Right)),
+            )),
     );
+
+    app.add_systems(
+        Update,
+        (
+            update_toolbar.run_if(resource_exists::<PlayerResources>),
+            handle_mouse_click_input.run_if(input_just_pressed(MouseButton::Left)),
+            handle_build_mode_change
+                .run_if(resource_changed::<BuildingMode>)
+                .after(cancel_cursor_mode),
+        )
+            .chain()
+            .run_if(in_state(Screen::Gameplay).and(in_state(Pause(false)))),
+    );
+}
+
+#[derive(Resource, Reflect, Debug, Clone)]
+#[reflect(Resource)]
+pub struct PlayerResources {
+    pub mana: u32,
+}
+
+impl Default for PlayerResources {
+    fn default() -> Self {
+        Self { mana: 50 }
+    }
+}
+
+#[derive(Resource, Reflect, Debug, Clone, Default)]
+#[reflect(Resource)]
+pub enum BuildingMode {
+    #[default]
+    None,
+    Lightning,
+    PlaceManaForge,
+    PlaceMinotaur,
 }
 
 fn unpause(mut next_pause: ResMut<NextState<Pause>>) {
@@ -51,22 +113,28 @@ fn pause(mut next_pause: ResMut<NextState<Pause>>) {
     next_pause.set(Pause(true));
 }
 
-fn handle_lightning_strike_input(
+fn handle_mouse_click_input(
     mut commands: Commands,
-    mouse_pos: Res<MousePosition>,
-    map: Option<Res<OnSpawnMap>>,
+    mode: Res<BuildingMode>,
+    mouse: Res<MousePosition>,
+    maybe_map: Option<Res<GameMap>>,
 ) {
-    if let Some(map) = map {
-        // convert to tile coords
-        let offset_x = map.size.x as f32 * map.sprite_size * 0.5;
-        let offset_y = map.size.y as f32 * map.sprite_size * 0.5;
-
-        let x = ((mouse_pos.world_pos.x + offset_x) / map.sprite_size).floor() as i32;
-        let y = ((mouse_pos.world_pos.y + offset_y) / map.sprite_size).floor() as i32;
-
-        commands.trigger(OnLightningStrike(IVec2::new(x, y)));
-    } else {
-        warn!("Skipping lightning strike input as there is no map yet");
+    match *mode {
+        BuildingMode::None => {}
+        BuildingMode::Lightning => {
+            if let Some(map) = maybe_map {
+                let coords = map.tile_coords(mouse.world_pos);
+                commands.trigger(OnLightningStrike(coords));
+            } else {
+                warn!("Skipping lightning strike input as there is no map yet");
+            }
+        }
+        BuildingMode::PlaceManaForge => {
+            commands.queue(SpawnManaForge(mouse.world_pos));
+        }
+        BuildingMode::PlaceMinotaur => {
+            commands.queue(SpawnMinotaur(mouse.world_pos));
+        }
     }
 }
 
@@ -90,4 +158,185 @@ fn open_pause_menu(mut next_menu: ResMut<NextState<Menu>>) {
 
 fn close_menu(mut next_menu: ResMut<NextState<Menu>>) {
     next_menu.set(Menu::None);
+}
+
+#[derive(Component, Reflect, Debug, Clone, Copy)]
+#[reflect(Component)]
+pub struct EnergyTextMarker;
+
+#[derive(Component, Reflect, Debug, Clone, Copy)]
+#[reflect(Component)]
+pub struct WindTextMarker;
+
+fn toolbar_node() -> NodeBuilder {
+    NodeBuilder::new()
+        .position(PositionType::Absolute)
+        .width(Val::Percent(100.0))
+        .height(Val::Px(35.0))
+        .left(0.0)
+        .background(SLATE_800)
+        .flex_direction(FlexDirection::Row)
+        .align(AlignItems::Center)
+}
+
+fn toolbar_button(text: impl Into<String>) -> impl Bundle {
+    (
+        NodeBuilder::new()
+            // .width(Val::Px(200.0))
+            .height(Val::Px(32.0))
+            .center_content()
+            .margin(UiRect::right(Val::Px(10.0)))
+            .build(),
+        Button,
+        children![(Text::new(text), TextFont::from_font_size(12.0))],
+    )
+}
+
+fn spawn_toolbar(mut commands: Commands) {
+    commands.spawn((
+        toolbar_node().top(0.0).build(),
+        StateScoped(Screen::Gameplay),
+        children![
+            (
+                EnergyTextMarker,
+                Text::new("ENERGY: 10"),
+                TextFont {
+                    font_size: 12.0,
+                    ..default()
+                }
+            ),
+            (
+                WindTextMarker,
+                Text::new(""),
+                TextFont {
+                    font_size: 12.0,
+                    ..default()
+                }
+            )
+        ],
+    ));
+}
+
+fn update_toolbar(
+    player_resource: Res<PlayerResources>,
+    wind: Res<WindDirection>,
+    mouse: Res<MousePosition>,
+    map: Res<GameMap>,
+    mut energy_text: Single<&mut Text, (Without<WindTextMarker>, With<EnergyTextMarker>)>,
+    mut wind_text: Single<&mut Text, (Without<EnergyTextMarker>, With<WindTextMarker>)>,
+) {
+    let cell_state = if let Some(cell) = map.tile_at_world_pos(mouse.world_pos) {
+        format!("{}", *cell)
+    } else {
+        String::new()
+    };
+
+    energy_text.0 = format!("MANA: {}", player_resource.mana);
+    wind_text.0 = format!(
+        " | WIND: From {} / {} | {cell_state}",
+        match CompassOctant::from(Dir2::new(wind.0).expect("to dir")) {
+            CompassOctant::North => "N",
+            CompassOctant::NorthEast => "NE",
+            CompassOctant::East => "E",
+            CompassOctant::SouthEast => "SE",
+            CompassOctant::South => "S",
+            CompassOctant::SouthWest => "SW",
+            CompassOctant::West => "W",
+            CompassOctant::NorthWest => "NW",
+        },
+        wind.0
+    );
+}
+
+#[derive(Component, Reflect, Debug, Clone, Default)]
+#[reflect(Component)]
+pub struct BuildingBar;
+
+#[cfg_attr(target_os = "macos", hot)]
+fn draw_building_bar(
+    mut commands: Commands,
+    mode: Res<BuildingMode>,
+    previous_items: Query<Entity, With<BuildingBar>>,
+) {
+    for entity in &previous_items {
+        commands.entity(entity).despawn();
+    }
+
+    commands
+        .spawn((
+            toolbar_node().bottom(0.0).build(),
+            StateScoped(Screen::Gameplay),
+            BuildingBar,
+        ))
+        .with_children(|builder| match *mode {
+            BuildingMode::None => {
+                builder.spawn(toolbar_button("Lightning Bolt")).observe(
+                    |_trigger: Trigger<Pointer<Click>>, mut mode: ResMut<BuildingMode>| {
+                        info!("Placing Lightning");
+                        *mode = BuildingMode::Lightning;
+                    },
+                );
+                builder.spawn(toolbar_button("Mana Forge (50)")).observe(
+                    |_trigger: Trigger<Pointer<Click>>, mut mode: ResMut<BuildingMode>| {
+                        info!("Placing Mana Forge");
+                        *mode = BuildingMode::PlaceManaForge;
+                    },
+                );
+                builder.spawn(toolbar_button("Minotaur (40)")).observe(
+                    |_trigger: Trigger<Pointer<Click>>, mut mode: ResMut<BuildingMode>| {
+                        info!("Placing Minotaur");
+                        *mode = BuildingMode::PlaceMinotaur;
+                    },
+                );
+            }
+            BuildingMode::Lightning => {
+                builder.spawn((Text::new("Click to start some fires (you pyro). Press <space> to cancel."), TextFont::from_font_size(12.0)));
+            }
+            BuildingMode::PlaceManaForge => {
+                builder.spawn((
+                    Text::new("Click the map to place a forge. Press <space> to cancel placement."),
+                    TextFont::from_font_size(12.0),
+                ));
+            }
+            BuildingMode::PlaceMinotaur => {
+                builder.spawn((
+                    Text::new(
+                        "Place a minotaur close to a Mana Forge. Press <space> to cancel placement.",
+                    ),
+                    TextFont::from_font_size(12.0),
+                ));
+            }
+        });
+}
+
+fn cancel_cursor_mode(mut mode: ResMut<BuildingMode>) {
+    info!("Resetting curs mode");
+    *mode = BuildingMode::None;
+}
+
+#[derive(Component, Reflect, Debug, Clone, Default)]
+#[reflect(Component)]
+pub struct CursorModeItem;
+
+#[cfg_attr(target_os = "macos", hot)]
+fn handle_build_mode_change(
+    mut commands: Commands,
+    mode: Res<BuildingMode>,
+    previous_items: Query<Entity, With<CursorModeItem>>,
+) {
+    // despawn previous entities
+    for entity in &previous_items {
+        commands.entity(entity).despawn();
+    }
+
+    match *mode {
+        BuildingMode::None | BuildingMode::Lightning | BuildingMode::PlaceManaForge => {}
+        BuildingMode::PlaceMinotaur => {
+            commands.insert_resource(ParentManaForge(None));
+        }
+    }
+
+    commands.run_system_cached(draw_building_bar);
+
+    // TODO spawn cursor/buldling placement items
 }

@@ -5,7 +5,31 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-bevy = { version = "0.16", features = ["wayland"] }
+bevy = { version = "0.16", default-features = false, features = [
+    "wayland",
+    # "bevy_anti_aliasing", #main branch
+    "bevy_asset", #enabled by bevy_core_pipeline
+    "bevy_audio",
+    "bevy_color", # enabled by bevy_sprite
+    "bevy_core_pipeline", #enabled by bevy_sprite
+    "bevy_input_focus",
+    "bevy_log",
+    "bevy_picking",
+    "bevy_render", #enabled by bevy_core_pipeline
+    "bevy_sprite",
+    "bevy_sprite_picking_backend",
+    "bevy_state",
+    "bevy_ui",
+    "bevy_ui_picking_backend",
+    "bevy_window",
+    "bevy_winit",
+    "default_font",
+    "multi_threaded",
+    "png",
+    "vorbis",
+    "webgl2"
+] }
+bevy_vector_shapes = "0.10.0"
 fastnoise-lite = "1.1"
 # Compile low-severity logs out of native builds for performance.
 log = { version = "0.4", features = [
@@ -19,10 +43,8 @@ tracing = { version = "0.1", features = [
     "release_max_level_warn",
 ] }
 
-[dependencies.bevy_life]
-git = "https://github.com/ManevilleF/bevy_life"
-rev = "d2f70049d3ffda496fd01ff12bbf29e7d11f115d"
-features = ["auto-coloring"]
+[target.'cfg(target_os = "macos")'.dependencies]
+bevy_simple_subsecond_system = "0.2.0"
 
 [features]
 # Default to a native dev build.
@@ -82,10 +104,11 @@ nonstandard_macro_braces = "warn"
 # Enable a small amount of optimization in the dev profile.
 [profile.dev]
 opt-level = 1
+# codegen-units = 1 # this is required for hot-patching to work on windows :shrug:
 
 # Enable a large amount of optimization in the dev profile for dependencies.
 [profile.dev.package."*"]
-opt-level = 3
+opt-level = 2
 
 # Remove expensive debug assertions due to <https://github.com/bevyengine/bevy/issues/14291>
 [profile.dev.package.wgpu-types]
@@ -118,3 +141,13 @@ codegen-units = 4
 
 [profile.ci.package."*"]
 opt-level = 0
+
+[profile.wasm-dev]
+inherits = "dev"
+opt-level = 1
+
+[profile.server-dev]
+inherits = "dev"
+
+[profile.android-dev]
+inherits = "dev"

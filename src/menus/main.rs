@@ -1,6 +1,11 @@
 //! The main menu (seen on the title screen).
 
-use crate::{asset_tracking::ResourceHandles, menus::Menu, screens::Screen, theme::widget};
+use crate::{
+    asset_tracking::ResourceHandles,
+    menus::Menu,
+    screens::Screen,
+    theme::{node_builder::NodeBuilder, widget},
+};
 use bevy::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
@@ -9,23 +14,31 @@ pub(super) fn plugin(app: &mut App) {
 
 fn spawn_main_menu(mut commands: Commands) {
     commands.spawn((
-        widget::ui_root("Main Menu"),
+        Name::new("Main Menu"),
+        NodeBuilder::new()
+            .width(Val::Percent(100.0))
+            .position(PositionType::Absolute)
+            .bottom(0.0)
+            .flex_direction(FlexDirection::Row)
+            .padding(UiRect::all(Val::Px(40.0)))
+            .center_content()
+            .build(),
         GlobalZIndex(2),
         StateScoped(Menu::Main),
         #[cfg(not(target_family = "wasm"))]
         children![
             widget::disabled_button("Story Mode"),
-            widget::button("Endless Mode", enter_loading_or_gameplay_screen),
-            widget::button("Settings", open_settings_menu),
-            widget::button("Credits", open_credits_menu),
-            widget::button("Exit", exit_app),
+            widget::button_menu("Endless Mode", enter_loading_or_gameplay_screen),
+            widget::button_menu("Settings", open_settings_menu),
+            widget::button_menu("Credits", open_credits_menu),
+            widget::button_menu("Exit", exit_app),
         ],
         #[cfg(target_family = "wasm")]
         children![
             widget::disabled_button("Story Mode"),
-            widget::button("Endless Mode", enter_loading_or_gameplay_screen),
-            widget::button("Settings", open_settings_menu),
-            widget::button("Credits", open_credits_menu),
+            widget::button_menu("Endless Mode", enter_loading_or_gameplay_screen),
+            widget::button_menu("Settings", open_settings_menu),
+            widget::button_menu("Credits", open_credits_menu),
         ],
     ));
 }

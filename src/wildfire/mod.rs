@@ -4,68 +4,22 @@
 
 use bevy::{
     color::palettes::{
-        css::SANDY_BROWN,
+        css::{BLACK, WHITE},
         tailwind::{
-            AMBER_700, AMBER_900, GRAY_200, GRAY_300, GRAY_400, GRAY_500, GREEN_400, GREEN_500,
-            GREEN_600, GREEN_700, LIME_300, LIME_400, LIME_500, LIME_700, ORANGE_600, ORANGE_700,
-            SLATE_800, YELLOW_400, YELLOW_500, YELLOW_600,
+            AMBER_700, AMBER_900, GREEN_900, LIME_500, ORANGE_600, ORANGE_700, SLATE_700,
+            STONE_500, YELLOW_400, YELLOW_500, YELLOW_600,
         },
     },
     prelude::*,
 };
-use bevy_life::{Cell, CellState, CellularAutomatonPlugin, LifeSystemSet};
-use rand::Rng;
-
-use crate::{Pause, wildfire::mapgen::NoiseMap};
 
 mod lightning;
-mod mapgen;
+mod map;
 mod wind;
 
 pub use lightning::OnLightningStrike;
-
-/// the amount of cells in the neighbourhood
-const NEIGHBOURHOOD_SIZE: usize = 8;
-
-const NEIGHBOUR_COORDINATES: [IVec2; NEIGHBOURHOOD_SIZE] = [
-    // Left
-    IVec2::new(-1, 0),
-    // Top Left
-    IVec2::new(-1, 1),
-    // Top
-    IVec2::new(0, 1),
-    // Top Right
-    IVec2::new(1, 1),
-    // Right
-    IVec2::new(1, 0),
-    // Bottom Right
-    IVec2::new(1, -1),
-    // Bottom
-    IVec2::new(0, -1),
-    // Bottom Left
-    IVec2::new(-1, -1),
-];
-
-const NEIGHBOUR_VECTOR: [Vec2; NEIGHBOURHOOD_SIZE] = [
-    // Left
-    Vec2::new(-1., 0.),
-    // Top Left
-    Vec2::new(-1., 1.),
-    // Top
-    Vec2::new(0., 1.),
-    // Top Right
-    Vec2::new(1., 1.),
-    // Right
-    Vec2::new(1., 0.),
-    // Bottom Right
-    Vec2::new(1., -1.),
-    // Bottom
-    Vec2::new(0., -1.),
-    // Bottom Left
-    Vec2::new(-1., -1.),
-];
-
-pub type WildfirePlugin = CellularAutomatonPlugin<TerrainCell, TerrainCellState>;
+pub use map::GameMap;
+pub use wind::WindDirection;
 
 pub fn plugin(app: &mut App) {
     app.register_type::<OnSpawnMap>();
@@ -73,27 +27,12 @@ pub fn plugin(app: &mut App) {
     app.register_type::<TerrainCellState>();
     app.register_type::<TerrainType>();
 
-    app.configure_sets(
-        PostUpdate,
-        (LifeSystemSet::NewCells, LifeSystemSet::RemovedCells)
-            .distributive_run_if(in_state(Pause(false)))
-            .chain(),
-    );
-    app.configure_sets(
-        Update,
-        LifeSystemSet::CellUpdate.run_if(in_state(Pause(false))),
-    );
-    app.add_plugins((
-        WildfirePlugin::new().with_time_step(0.1),
-        lightning::plugin,
-        wind::plugin,
-    ));
+    app.add_plugins((map::plugin, lightning::plugin, wind::plugin));
     app.add_observer(spawn_map);
 }
 
 // NOTE: slightly weird using this as an event and a resource but game jam
-#[derive(Resource, Event, Debug, Reflect, Clone, Copy)]
-#[reflect(Resource)]
+#[derive(Event, Debug, Reflect, Clone, Copy)]
 pub struct OnSpawnMap {
     pub size: UVec2,
     pub sprite_size: f32,
@@ -103,16 +42,19 @@ pub struct OnSpawnMap {
 #[reflect(Component)]
 pub struct SpawnedMap;
 
+#[derive(Component, Debug, Clone, Copy, Reflect)]
+#[reflect(Component)]
+pub struct TerrainCell;
+
 fn spawn_map(trigger: Trigger<OnSpawnMap>, mut commands: Commands) {
     info!("Spawning map");
 
     let data = trigger.event();
-
     let size_x = data.size.x;
     let size_y = data.size.y;
     let sprite_size = data.sprite_size;
 
-    let noise = NoiseMap::new();
+    let mut map = GameMap::new(sprite_size, size_x as usize, size_y as usize);
 
     commands
         .spawn((
@@ -126,74 +68,41 @@ fn spawn_map(trigger: Trigger<OnSpawnMap>, mut commands: Commands) {
             Visibility::default(),
         ))
         .with_children(|builder| {
-            for y in 0..=size_y {
-                for x in 0..=size_x {
-                    let (terrain, fuel_load) = noise.sample(x, y);
+            for y in 0..size_y {
+                for x in 0..size_x {
+                    let entity = builder
+                        .spawn((
+                            TerrainCell,
+                            Sprite {
+                                custom_size: Some(Vec2::splat(sprite_size)),
+                                ..Default::default()
+                            },
+                            Transform::from_xyz(
+                                sprite_size * x as f32,
+                                sprite_size * y as f32,
+                                0.0,
+                            ),
+                        ))
+                        .id();
 
-                    builder.spawn((
-                        Sprite {
-                            custom_size: Some(Vec2::splat(sprite_size)),
-                            ..Default::default()
-                        },
-                        Transform::from_xyz(sprite_size * x as f32, sprite_size * y as f32, 0.0),
-                        TerrainCell {
-                            coords: IVec2::new(x as i32, y as i32),
-                        },
-                        TerrainCellState {
-                            terrain,
-                            moisture: 0.7,
-                            wind: Vec2::ONE * 2.0,
-                            fuel_load,
-                        },
-                    ));
+                    let cell = &mut map.data[y as usize][x as usize];
+                    cell.sprite_entity = Some(entity);
+                    cell.dirty = true;
                 }
             }
         });
 
-    commands.insert_resource(*data);
-}
-
-/// The coordinates for a cellin the terrain map
-#[derive(Debug, Clone, Component, Reflect)]
-#[reflect(Component)]
-pub struct TerrainCell {
-    pub coords: IVec2,
-}
-
-impl TerrainCell {
-    /// Gets the neighbour coordinates for this cell
-    pub fn neighbour_coords(&self) -> impl ExactSizeIterator<Item = IVec2> {
-        NEIGHBOUR_COORDINATES.map(|n| n + self.coords).into_iter()
-    }
-}
-
-impl std::ops::Deref for TerrainCell {
-    type Target = IVec2;
-
-    fn deref(&self) -> &Self::Target {
-        &self.coords
-    }
-}
-
-impl Cell for TerrainCell {
-    type Coordinates = IVec2;
-
-    fn coords(&self) -> &Self::Coordinates {
-        &self.coords
-    }
-
-    fn neighbor_coordinates(&self) -> impl ExactSizeIterator<Item = Self::Coordinates> + '_ {
-        self.neighbour_coords()
-    }
+    commands.insert_resource(map);
 }
 
 /// A type of terrain
-#[derive(Debug, Clone, Copy, Eq, PartialEq, Reflect)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Reflect, Default)]
 pub enum TerrainType {
     Dirt,
-    Stone,
+    #[default]
     Grassland,
     Tree,
+    Stone,
     Fire,
     Smoldering,
 }
@@ -211,77 +120,95 @@ impl TerrainType {
     }
 }
 
+impl std::fmt::Display for TerrainType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "{}",
+            match self {
+                TerrainType::Dirt => "Earth",
+                TerrainType::Stone => "Stone",
+                TerrainType::Grassland => "Grass",
+                TerrainType::Tree => "Forest",
+                TerrainType::Fire => "Fire",
+                TerrainType::Smoldering => "Burnt Ground",
+            }
+        )
+    }
+}
+
 /// The state of a given cell in the map
-#[derive(Debug, Copy, Clone, PartialEq, Component, Reflect)]
-#[reflect(Component)]
+#[derive(Debug, Copy, Clone, PartialEq, Reflect, Default)]
 pub struct TerrainCellState {
     pub terrain: TerrainType,
     pub wind: Vec2,
     pub moisture: f32,
     pub fuel_load: u8,
+
+    pub sprite_entity: Option<Entity>,
+    dirty: bool,
 }
 
-impl CellState for TerrainCellState {
-    fn new_cell_state<'a>(&self, neighbor_cells: impl Iterator<Item = &'a Self>) -> Self {
+impl std::fmt::Display for TerrainCellState {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self.terrain {
-            TerrainType::Fire => {
-                let mut item = *self;
-                if rand::rng().random_bool(0.4) {
-                    item.fuel_load = item.fuel_load.saturating_sub(1);
-
-                    if self.fuel_load == 0 {
-                        item.terrain = TerrainType::Smoldering;
-                    }
-                }
-
-                item
-            }
             TerrainType::Grassland | TerrainType::Tree => {
-                let mut item = *self;
-                let mut rng = rand::rng();
-
-                for (idx, n) in neighbor_cells.enumerate() {
-                    // each neighbouring fire has a chance to set this on fire
-                    if rng.random_bool(0.18) && matches!(n.terrain, TerrainType::Fire) {
-                        let base_probability = self.terrain.burn_rate();
-
-                        let wind_angle = self.wind.angle_to(NEIGHBOUR_VECTOR[idx]);
-                        let wind_strength = self.wind.length();
-                        let wind_factor = (wind_strength * 0.131 * (wind_angle.cos() - 1.0))
-                            * (0.045 * wind_strength).exp();
-
-                        let moisture_factor = 1. - self.moisture;
-
-                        let burn_chance =
-                            (base_probability * (1. + moisture_factor) * (1. + wind_factor))
-                                .clamp(0.0, 1.0) as f64
-                                * rng.random::<f64>();
-                        if rng.random_bool(burn_chance) {
-                            item.terrain = TerrainType::Fire;
+                write!(
+                    f,
+                    "{}{}{}",
+                    if matches!(self.terrain, TerrainType::Grassland) {
+                        if self.fuel_load < 3 {
+                            "Short "
+                        } else if self.fuel_load > 8 {
+                            "Long "
+                        } else {
+                            ""
                         }
-                    }
-                }
-
-                item
+                    } else {
+                        ""
+                    },
+                    if self.moisture < 0.3 {
+                        "Wet "
+                    } else if self.moisture > 0.8 {
+                        "Dry "
+                    } else {
+                        ""
+                    },
+                    self.terrain,
+                )
             }
-            TerrainType::Dirt | TerrainType::Stone | TerrainType::Smoldering => *self,
+            TerrainType::Dirt
+            | TerrainType::Stone
+            | TerrainType::Fire
+            | TerrainType::Smoldering => write!(f, "{}", self.terrain),
         }
     }
+}
 
-    fn color(&self) -> Option<bevy::prelude::Color> {
-        Some(match self.terrain {
-            TerrainType::Dirt => SANDY_BROWN.into(),
+impl TerrainCellState {
+    pub fn mark_dirty(&mut self) {
+        self.dirty = true;
+    }
+
+    fn colour(&self) -> Color {
+        match self.terrain {
+            TerrainType::Dirt => Color::Srgba(Srgba {
+                red: 0.37,
+                green: 0.27,
+                blue: 0.08,
+                alpha: 1.0,
+            }),
             TerrainType::Grassland => match self.fuel_load {
-                0 | 1 => LIME_300.into(),
-                2 | 3 => LIME_400.into(),
-                4 | 5 => LIME_500.into(),
-                _ => LIME_700.into(),
+                0 | 1 => LIME_500.mix(&WHITE, 0.03).into(),
+                2 | 3 => LIME_500.into(),
+                4 | 5 => LIME_500.mix(&BLACK, 0.025).into(),
+                _ => LIME_500.mix(&BLACK, 0.05).into(),
             },
             TerrainType::Tree => match self.fuel_load {
-                0..=4 => GREEN_400.into(),
-                5..=7 => GREEN_500.into(),
-                8..=11 => GREEN_600.into(),
-                _ => GREEN_700.into(),
+                0..=4 => GREEN_900.mix(&BLACK, 0.025).into(),
+                5..=7 => GREEN_900.into(),
+                8..=11 => GREEN_900.mix(&WHITE, 0.05).into(),
+                _ => GREEN_900.mix(&WHITE, 0.075).into(),
             },
             TerrainType::Fire => match self.fuel_load {
                 0 => AMBER_900.into(),
@@ -293,12 +220,12 @@ impl CellState for TerrainCellState {
                 _ => YELLOW_400.into(),
             },
             TerrainType::Stone => match self.fuel_load {
-                0 | 1 => GRAY_500.into(),
-                2 | 3 => GRAY_400.into(),
-                4 | 5 => GRAY_300.into(),
-                _ => GRAY_200.into(),
+                0 | 1 => STONE_500.mix(&BLACK, 0.05).into(),
+                2 | 3 => STONE_500.into(),
+                4 | 5 => STONE_500.mix(&WHITE, 0.05).into(),
+                _ => STONE_500.mix(&WHITE, 0.1).into(),
             },
-            TerrainType::Smoldering => SLATE_800.into(),
-        })
+            TerrainType::Smoldering => SLATE_700.into(),
+        }
     }
 }

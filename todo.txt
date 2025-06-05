@@ -1,0 +1,38 @@
+Basic gameplay
+
+- [ ] hover UI for buildings with info
+- [ ] seed mapgen and pick some good seeds
+- [ ] child buildings consume mana each time they "produce"
+- [x] show lines between mana forge and child buidings
+- [x] chain react child buildings when mana forge is blown up
+
+Building placement
+
+- [ ] make sure building sprites are centered on grid coords
+- [ ] disable invalid buttons (i.e. not enough resources)
+- [x] place buildings only when in range of a mana forge
+
+Victory conditions
+
+- [ ] add city to defend
+- [ ] add victory condition when fire is out
+- [ ] add defeat condition when fire burns target
+
+Fire sim
+
+- [ ] slow it all down, using moisture but with more fuel
+
+Juice
+
+- [ ] animated mana forge
+- [ ] fireballs on mana forge detonation
+- [ ] animated power surge to child buildings
+- [ ] animated child building detonation
+- [ ] audio on building explode
+- [x] animated connection to child buildings
+
+Polish
+
+- [ ] menu rejig - show a fire in the background, buttons down the bottom
+- [ ] music
+
