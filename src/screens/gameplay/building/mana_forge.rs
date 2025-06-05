@@ -43,7 +43,6 @@ impl Command for SpawnManaForge {
     }
 }
 
-#[cfg_attr(target_os = "macos", hot)]
 fn spawn_mana_forge(
     In(config): In<SpawnManaForge>,
     mut commands: Commands,

@@ -45,7 +45,6 @@ impl Command for SpawnMinotaur {
     }
 }
 
-#[cfg_attr(target_os = "macos", hot)]
 fn spawn_minotaur(
     In(config): In<SpawnMinotaur>,
     mut commands: Commands,
