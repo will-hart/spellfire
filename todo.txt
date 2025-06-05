@@ -1,16 +1,16 @@
 Basic gameplay
 
 - [ ] hover UI for buildings with info
-- [ ] show lines between mana forge and child buidings
-- [ ] chain react child buildings when mana forge is blown up
 - [ ] seed mapgen and pick some good seeds
 - [ ] child buildings consume mana each time they "produce"
+- [x] show lines between mana forge and child buidings
+- [x] chain react child buildings when mana forge is blown up
 
 Building placement
 
-- [ ] disable invalid buttons (i.e. not enough resources)
-- [ ] place buildings only when in range of a mana forge
 - [ ] make sure building sprites are centered on grid coords
+- [ ] disable invalid buttons (i.e. not enough resources)
+- [x] place buildings only when in range of a mana forge
 
 Victory conditions
 
@@ -25,11 +25,11 @@ Fire sim
 Juice
 
 - [ ] animated mana forge
-- [ ] animated connection to child buildings
 - [ ] fireballs on mana forge detonation
 - [ ] animated power surge to child buildings
 - [ ] animated child building detonation
 - [ ] audio on building explode
+- [x] animated connection to child buildings
 
 Polish
 
