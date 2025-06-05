@@ -1,6 +1,7 @@
 //! Logic + code for placing mana forge buildings
 
 use bevy::{prelude::*, sprite::Anchor};
+#[cfg(target_os = "macos")]
 use bevy_simple_subsecond_system::hot;
 use rand::Rng;
 
@@ -170,7 +171,7 @@ impl Minotaur {
     }
 }
 
-#[hot]
+#[cfg_attr(target_os = "macos", hot)]
 fn while_placing_minotaur(
     mouse: Res<MousePosition>,
     mode: Res<BuildingMode>,
@@ -204,7 +205,7 @@ fn while_placing_minotaur(
     nearest_forge.0 = distances.first().map(|(e, _)| e).copied();
 }
 
-#[hot]
+#[cfg_attr(target_os = "macos", hot)]
 fn produce_from_minotaur(
     time: Res<Time>,
     mut map: ResMut<GameMap>,

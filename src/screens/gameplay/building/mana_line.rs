@@ -1,6 +1,7 @@
 //! Code for drawing mana lines
 
 use bevy::{color::palettes::tailwind::SKY_500, prelude::*};
+#[cfg(target_os = "macos")]
 use bevy_simple_subsecond_system::hot;
 use bevy_vector_shapes::prelude::*;
 
@@ -16,7 +17,7 @@ pub(super) fn plugin(app: &mut App) {
     );
 }
 
-#[hot]
+#[cfg_attr(target_os = "macos", hot)]
 fn draw_mana_lines(time: Res<Time>, mut painter: ShapePainter, mut lines: Query<&mut ManaLine>) {
     for mut line in &mut lines {
         let mana_colour = SKY_500.lighter((3. * time.elapsed_secs()).cos() / 12.0);
