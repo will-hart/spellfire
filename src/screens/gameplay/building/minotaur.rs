@@ -1,6 +1,7 @@
 //! Logic + code for placing mana forge buildings
 
 use bevy::{prelude::*, sprite::Anchor};
+use bevy_simple_subsecond_system::hot;
 use rand::Rng;
 
 use crate::{
@@ -11,7 +12,7 @@ use crate::{
         gameplay::{
             BuildingMode,
             building::{
-                BuildingAssets, BuildingLocation, BuildingType, ParentManaForge,
+                BuildingAssets, BuildingLocation, BuildingType, ManaLine, ParentManaForge,
                 mana_forge::ManaForge,
             },
         },
@@ -81,6 +82,11 @@ fn spawn_minotaur(
             BuildingLocation(coords),
             BuildingType::Minotaur,
             Minotaur::default(),
+            ManaLine {
+                from: parent_tx.translation.truncate().extend(0.05),
+                to: config.0.extend(0.05),
+                mana_dot_distance: 0.0,
+            },
             StateScoped(Screen::Gameplay),
             Transform::from_xyz(
                 // coords.x as f32 * map.sprite_size,
@@ -129,10 +135,19 @@ impl Minotaur {
     /// Move the minotaur to a random new position
     fn move_to_grass(&mut self, map: &mut GameMap, center: IVec2) {
         // first find all the available cells that are grass or trees
-        let coords = ((center.y - self.range).max(0)..=(center.y + self.range).max(0))
+        let range = self.range;
+
+        let coords = ((center.y - range).max(0)..=(center.y + range).max(0))
             .flat_map(|y| {
-                ((center.x - self.range).max(0)..=(center.x + self.range).max(0))
-                    .map(move |x| IVec2::new(x, y))
+                ((center.x - range).max(0)..=(center.x + range).max(0)).filter_map(move |x| {
+                    let v = IVec2::new(x, y);
+
+                    if v.distance_squared(center) > range * range {
+                        None
+                    } else {
+                        Some(v)
+                    }
+                })
             })
             .filter_map(
                 // limit to trees and grass
@@ -155,6 +170,7 @@ impl Minotaur {
     }
 }
 
+#[hot]
 fn while_placing_minotaur(
     mouse: Res<MousePosition>,
     mode: Res<BuildingMode>,
@@ -188,6 +204,7 @@ fn while_placing_minotaur(
     nearest_forge.0 = distances.first().map(|(e, _)| e).copied();
 }
 
+#[hot]
 fn produce_from_minotaur(
     time: Res<Time>,
     mut map: ResMut<GameMap>,
