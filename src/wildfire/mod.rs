@@ -168,9 +168,9 @@ impl std::fmt::Display for TerrainCellState {
                         ""
                     },
                     if self.moisture < 0.3 {
-                        "Dry "
-                    } else if self.moisture > 0.8 {
                         "Wet "
+                    } else if self.moisture > 0.8 {
+                        "Dry "
                     } else {
                         ""
                     },
@@ -186,6 +186,10 @@ impl std::fmt::Display for TerrainCellState {
 }
 
 impl TerrainCellState {
+    pub fn mark_dirty(&mut self) {
+        self.dirty = true;
+    }
+
     fn colour(&self) -> Color {
         match self.terrain {
             TerrainType::Dirt => Color::Srgba(Srgba {

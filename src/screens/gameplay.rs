@@ -13,7 +13,10 @@ use crate::{
     demo::level::spawn_level,
     input::MousePosition,
     menus::Menu,
-    screens::{Screen, gameplay::building::SpawnManaForge},
+    screens::{
+        Screen,
+        gameplay::building::{ParentManaForge, SpawnManaForge, SpawnMinotaur},
+    },
     theme::node_builder::NodeBuilder,
     wildfire::{GameMap, OnLightningStrike, WindDirection},
 };
@@ -88,7 +91,7 @@ pub struct PlayerResources {
 
 impl Default for PlayerResources {
     fn default() -> Self {
-        Self { mana: 15 }
+        Self { mana: 50 }
     }
 }
 
@@ -98,6 +101,7 @@ pub enum BuildingMode {
     #[default]
     None,
     PlaceManaForge,
+    PlaceMinotaur,
 }
 
 fn unpause(mut next_pause: ResMut<NextState<Pause>>) {
@@ -110,7 +114,7 @@ fn pause(mut next_pause: ResMut<NextState<Pause>>) {
 
 fn handle_mouse_click_input(
     mut commands: Commands,
-    mut mode: ResMut<BuildingMode>,
+    mode: Res<BuildingMode>,
     mouse: Res<MousePosition>,
     maybe_map: Option<Res<GameMap>>,
 ) {
@@ -125,7 +129,9 @@ fn handle_mouse_click_input(
         }
         BuildingMode::PlaceManaForge => {
             commands.queue(SpawnManaForge(mouse.world_pos));
-            *mode = BuildingMode::None;
+        }
+        BuildingMode::PlaceMinotaur => {
+            commands.queue(SpawnMinotaur(mouse.world_pos));
         }
     }
 }
@@ -261,17 +267,31 @@ fn draw_building_bar(
         ))
         .with_children(|builder| match *mode {
             BuildingMode::None => {
-                builder.spawn(toolbar_button("Mana Forge")).observe(
+                builder.spawn(toolbar_button("Mana Forge (50)")).observe(
                     |_trigger: Trigger<Pointer<Click>>, mut mode: ResMut<BuildingMode>| {
-                        info!("Placing Maa Forge");
+                        info!("Placing Mana Forge");
                         *mode = BuildingMode::PlaceManaForge;
+                    },
+                );
+                builder.spawn(toolbar_button("Minotaur (40)")).observe(
+                    |_trigger: Trigger<Pointer<Click>>, mut mode: ResMut<BuildingMode>| {
+                        info!("Placing Minotaur");
+                        *mode = BuildingMode::PlaceMinotaur;
                     },
                 );
             }
             BuildingMode::PlaceManaForge => {
                 builder.spawn((
                     Text::new("Click the map to place a forge. Press <space> to cancel placement."),
-                    TextFont::from_font_size(14.0),
+                    TextFont::from_font_size(12.0),
+                ));
+            }
+            BuildingMode::PlaceMinotaur => {
+                builder.spawn((
+                    Text::new(
+                        "Place a minotaur close to a Mana Forge. Press <space> to cancel placement.",
+                    ),
+                    TextFont::from_font_size(12.0),
                 ));
             }
         });
@@ -289,11 +309,19 @@ pub struct CursorModeItem;
 #[cfg_attr(target_os = "macos", hot)]
 fn handle_build_mode_change(
     mut commands: Commands,
+    mode: Res<BuildingMode>,
     previous_items: Query<Entity, With<CursorModeItem>>,
 ) {
     // despawn previous entities
     for entity in &previous_items {
         commands.entity(entity).despawn();
+    }
+
+    match *mode {
+        BuildingMode::None | BuildingMode::PlaceManaForge => {}
+        BuildingMode::PlaceMinotaur => {
+            commands.insert_resource(ParentManaForge(None));
+        }
     }
 
     commands.run_system_cached(draw_building_bar);
