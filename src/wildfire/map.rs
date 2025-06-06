@@ -279,6 +279,17 @@ impl GameMap {
         IVec2::new(x as i32, y as i32)
     }
 
+    /// Converts from tile coordinates to world coordinates. Used for example
+    /// in building placement where want to clamp world coords to tile bounds
+    pub fn world_coords(&self, tile_pos: IVec2) -> Vec2 {
+        let x =
+            tile_pos.x as f32 * self.sprite_size - (self.size_x as f32 * self.sprite_size * 0.5);
+        let y =
+            tile_pos.y as f32 * self.sprite_size - (self.size_y as f32 * self.sprite_size * 0.5);
+
+        Vec2::new(x, y)
+    }
+
     /// Gets a reference to the tile at the given world position, or None if
     /// no cell exists at that location
     pub fn tile_at_world_pos(&self, world_pos: Vec2) -> Option<&TerrainCellState> {

@@ -58,6 +58,7 @@ fn spawn_mana_forge(
     resources.mana -= 50;
 
     let coords = map.tile_coords(config.0);
+    let clamped_world_coords = map.world_coords(coords);
     info!("Spawning mana forge at {coords}");
 
     commands.spawn((
@@ -65,11 +66,7 @@ fn spawn_mana_forge(
         BuildingType::ManaForge,
         ManaForge::default(),
         StateScoped(Screen::Gameplay),
-        Transform::from_xyz(
-            // coords.x as f32 * map.sprite_size,
-            // coords.y as f32 * map.sprite_size,
-            config.0.x, config.0.y, 0.1,
-        ),
+        Transform::from_translation(clamped_world_coords.extend(0.1)),
         Visibility::Visible,
         Sprite {
             image: buildings.mana_forge.clone(),

@@ -68,6 +68,7 @@ fn spawn_minotaur(
     resources.mana -= 30;
 
     let coords = map.tile_coords(config.0);
+    let world_coords = map.world_coords(coords);
     info!("Spawning minotaur at {coords}");
 
     let Ok(parent_tx) = forges.get(parent_forge) else {
@@ -88,10 +89,8 @@ fn spawn_minotaur(
             ManaLineBalls::default(),
             StateScoped(Screen::Gameplay),
             Transform::from_xyz(
-                // coords.x as f32 * map.sprite_size,
-                // coords.y as f32 * map.sprite_size,
-                config.0.x - parent_tx.translation.x,
-                config.0.y - parent_tx.translation.y,
+                world_coords.x - parent_tx.translation.x,
+                world_coords.y - parent_tx.translation.y,
                 0.1,
             ),
             Visibility::Visible,
