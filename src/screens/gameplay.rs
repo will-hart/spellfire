@@ -13,9 +13,18 @@ use bevy::{
 use bevy_simple_subsecond_system::prelude::*;
 
 use crate::{
-    demo::level::spawn_level, input::MousePosition, menus::Menu, screens::{
-        gameplay::building::{BuildingAssets, ManaLine, ParentManaForge, SpawnManaForge, SpawnMinotaur}, Screen
-    }, theme::node_builder::NodeBuilder, wildfire::{GameMap, OnLightningStrike, WindDirection}, Pause
+    Pause,
+    demo::level::spawn_level,
+    input::MousePosition,
+    menus::Menu,
+    screens::{
+        Screen,
+        gameplay::building::{
+            BuildingAssets, ManaLine, ParentManaForge, SpawnManaForge, SpawnMinotaur,
+        },
+    },
+    theme::node_builder::NodeBuilder,
+    wildfire::{GameMap, OnLightningStrike, WindDirection},
 };
 
 mod building;
@@ -228,20 +237,16 @@ fn toolbar_button(
                 .margin(UiRect::right(Val::Px(10.0)))
                 .build(),
             Button,
-            children![
-                ImageNode {
-                    image,
-                    ..default()
-                    
-                }
-        ],
+            children![ImageNode { image, ..default() }],
         ))
         .observe(
-            move |_trigger: Trigger<Pointer<Over>>, mode: Res<BuildingMode>, mut hint: ResMut<BuildTextHint>| {
+            move |_trigger: Trigger<Pointer<Over>>,
+                  mode: Res<BuildingMode>,
+                  mut hint: ResMut<BuildTextHint>| {
                 if !matches!(*mode, BuildingMode::None) {
                     return;
                 }
-                
+
                 hint.set(hover.clone());
             },
         )
@@ -253,12 +258,15 @@ fn toolbar_button(
                 *new_mode = mode.clone();
                 hint.set(selected.clone());
             },
-        ).observe(
-            |_trigger: Trigger<Pointer<Out>>, mode: Res<BuildingMode>, mut hint: ResMut<BuildTextHint> | {
+        )
+        .observe(
+            |_trigger: Trigger<Pointer<Out>>,
+             mode: Res<BuildingMode>,
+             mut hint: ResMut<BuildTextHint>| {
                 if matches!(*mode, BuildingMode::None) {
                     hint.clear();
                 }
-            }
+            },
         );
 }
 
@@ -307,7 +315,7 @@ fn spawn_toolbar(mut commands: Commands, building_assets: Res<BuildingAssets>) {
                         Text::new("Buildings: "),
                         TextFont::from_font_size(12.)
                     ));
-                    
+
                     toolbar_button(
                         toolbar,
                         BuildingMode::Lightning,
@@ -315,14 +323,14 @@ fn spawn_toolbar(mut commands: Commands, building_assets: Res<BuildingAssets>) {
                         "Lightning Bolt. Be a pyro and start some fires :D",
                         "Click to trigger a lightning bolt, press <space> to stop."
                     );
-                    
+
                     toolbar_button(toolbar,
                          BuildingMode::PlaceManaForge,
                          building_assets.mana_forge.clone(),
                           "MANA FORGE. Cost: 50 Mana. Produces Mana (3/sec), powers other buildings.",
                            "Click the map to place a forge. Press <space> to cancel placement."
                     );
-                    
+
                     toolbar_button(toolbar,
                         BuildingMode::PlaceMinotaur,
                         building_assets.minotaur.clone(),
