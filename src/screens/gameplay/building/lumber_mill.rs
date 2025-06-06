@@ -1,8 +1,6 @@
 //! Logic + code for placing lumber mill buildings
 
 use bevy::{prelude::*, sprite::Anchor};
-#[cfg(target_os = "macos")]
-use bevy_simple_subsecond_system::hot;
 use rand::Rng;
 
 use crate::{
