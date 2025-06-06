@@ -36,7 +36,7 @@ log = { version = "0.4", features = [
     "max_level_debug",
     "release_max_level_warn",
 ] }
-rand= "0.9"
+rand= "0.8"
 # Compile low-severity logs out of web builds for performance.
 tracing = { version = "0.1", features = [
     "max_level_debug",
@@ -65,6 +65,8 @@ dev_native = [
     "bevy/embedded_watcher",
 ]
 
+[target.wasm32-unknown-unknown.dependencies]
+getrandom = { version = "0.3", features = ["wasm_js"] }
 
 [package.metadata.bevy_cli.release]
 # Disable dev features for release builds.
@@ -76,7 +78,6 @@ default-features = false
 
 [package.metadata.bevy_cli.web.dev]
 features = ["dev"]
-
 
 [lints.rust]
 # Mark `bevy_lint` as a valid `cfg`, as it is set when the Bevy linter runs.
@@ -151,3 +152,6 @@ inherits = "dev"
 
 [profile.android-dev]
 inherits = "dev"
+
+[patch.crates-io]
+getrandom = { git = "https://github.com/benfrankel/getrandom" }

@@ -31,13 +31,13 @@ fn wandery_wind(mut time_left: Local<f32>, time: Res<Time>, mut wind: ResMut<Win
     }
 
     // update the wind
-    let mut rng = rand::rng();
-    let strength_delta = rng.random_range(-0.1..=0.1);
+    let mut rng = rand::thread_rng();
+    let strength_delta = rng.gen_range(-0.1..=0.1);
     let current_strength = wind.0.length() + strength_delta;
     let normed_wind = wind.0.normalize_or(Vec2::ONE);
 
     wind.0 = Vec2::new(
-        normed_wind.x + rng.random_range(-0.05..=0.05),
-        normed_wind.y + rng.random_range(-0.05..=0.05),
+        normed_wind.x + rng.gen_range(-0.05..=0.05),
+        normed_wind.y + rng.gen_range(-0.05..=0.05),
     ) * current_strength;
 }

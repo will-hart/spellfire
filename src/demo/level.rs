@@ -36,7 +36,7 @@ impl FromWorld for LevelAssets {
 pub fn spawn_level(mut commands: Commands, endless_mode: Option<Res<EndlessMode>>) {
     let seed = if endless_mode.is_some() {
         info!("Spawning random level in endless mode");
-        rand::rng().random()
+        rand::thread_rng().r#gen()
     } else {
         info!("Spawning first level");
         GOOD_SEEDS[0]

@@ -135,14 +135,14 @@ fn blow_up_mana_forge(
             commands.entity(entity).despawn();
 
             // spawn fires around
-            let mut rng = rand::rng();
-            let num_fires = rng.random_range(2..=5);
+            let mut rng = rand::thread_rng();
+            let num_fires = rng.gen_range(2..=5);
             info!("Spawning {num_fires} other fires");
 
             // TODO: JUICE! spawn fireballs to show the effects
             for _ in 0..num_fires {
                 let fire_tile_coords =
-                    loc.0 + IVec2::new(rng.random_range(-10..=10), rng.random_range(-10..10));
+                    loc.0 + IVec2::new(rng.gen_range(-10..=10), rng.gen_range(-10..10));
                 commands.trigger(OnLightningStrike(fire_tile_coords));
             }
         }

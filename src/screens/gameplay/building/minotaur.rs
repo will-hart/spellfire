@@ -176,8 +176,8 @@ impl Minotaur {
         }
 
         // now pick one and move there
-        let mut rng = rand::rng();
-        let idx = rng.random_range(0..coords.len());
+        let mut rng = rand::thread_rng();
+        let idx = rng.gen_range(0..coords.len());
         self.location = coords[idx];
     }
 }

@@ -125,8 +125,8 @@ fn redraw_map(
         commands.entity(building).despawn();
     }
 
-    let mut rng = rand::rng();
-    commands.trigger(OnSpawnMap::new(rng.random()))
+    let mut rng = rand::thread_rng();
+    commands.trigger(OnSpawnMap::new(rng.r#gen()))
 }
 
 pub struct NoiseMap {
@@ -336,7 +336,7 @@ impl GameMap {
         const FIRE_SPREAD_CHANCE: f64 = 0.2;
         const MOISTURE_DECAY_RATE: f32 = 0.01;
 
-        let mut rng = rand::rng();
+        let mut rng = rand::thread_rng();
 
         for y in 0..self.size_y {
             for x in 0..self.size_x {
@@ -344,7 +344,7 @@ impl GameMap {
 
                 match self_terrain {
                     TerrainType::Fire => {
-                        if rng.random_bool(BURN_DECAY_RATE) {
+                        if rng.gen_bool(BURN_DECAY_RATE) {
                             let new_fuel_load = self.data[y][x].fuel_load.saturating_sub(1);
                             self.data[y][x].fuel_load = new_fuel_load;
 
@@ -370,7 +370,7 @@ impl GameMap {
                                     (self.data[y][x].moisture - MOISTURE_DECAY_RATE).max(0.0);
 
                                 // on some percentage, spread the fire
-                                if rng.random_bool(FIRE_SPREAD_CHANCE) {
+                                if rng.gen_bool(FIRE_SPREAD_CHANCE) {
                                     let base_probability = self.data[y][x].terrain.burn_rate();
 
                                     let wind_angle = (self.data[y][x].wind + global_wind)
@@ -389,8 +389,8 @@ impl GameMap {
 
                                     // check if we "roll" less than burn_chance, modified by a random
                                     // amount to create some noise in the burning
-                                    let rng_factor = rng.random::<f64>();
-                                    if rng.random_bool(burn_chance * rng_factor) {
+                                    let rng_factor = rng.r#gen::<f64>();
+                                    if rng.gen_bool(burn_chance * rng_factor) {
                                         self.data[y][x].terrain = TerrainType::Fire;
                                         self.data[y][x].dirty = true;
                                         break; // no need to set it on fire any other way, lets take a break
