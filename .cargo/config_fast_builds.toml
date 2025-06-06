@@ -100,11 +100,11 @@ rustflags = [
   #
   # Brew: `brew install llvm`
   # Manually: <https://lld.llvm.org/MachO/index.html>
-  # "-Clink-arg=-fuse-ld=/usr/local/opt/llvm/bin/ld64.lld",
+  "-Clink-arg=-fuse-ld=/usr/local/opt/lld/bin/ld64.lld",
 
   # Nightly
-  # "-Zshare-generics=y",
-  # "-Zthreads=0",
+  "-Zshare-generics=y",
+  "-Zthreads=0",
 ]
 
 [target.aarch64-apple-darwin]
@@ -117,11 +117,11 @@ rustflags = [
   #
   # Brew: `brew install llvm`
   # Manually: <https://lld.llvm.org/MachO/index.html>
-  # "-Clink-arg=-fuse-ld=/opt/homebrew/opt/llvm/bin/ld64.lld",
+  "-Clink-arg=-fuse-ld=/opt/homebrew/opt/lld/bin/ld64.lld",
 
   # Nightly
-  # "-Zshare-generics=y",
-  # "-Zthreads=0",
+  "-Zshare-generics=y",
+  "-Zthreads=0",
 ]
 
 [target.x86_64-pc-windows-msvc]

@@ -8,11 +8,17 @@ mod audio;
 mod demo;
 #[cfg(feature = "dev")]
 mod dev_tools;
+mod input;
 mod menus;
 mod screens;
 mod theme;
+mod wildfire;
 
-use bevy::{asset::AssetMetaCheck, prelude::*};
+use bevy::{asset::AssetMetaCheck, color::palettes::css::BLACK, prelude::*};
+#[cfg(target_os = "macos")]
+use bevy_simple_subsecond_system::prelude::*;
+
+use bevy_vector_shapes::Shape2dPlugin;
 
 fn main() -> AppExit {
     App::new().add_plugins(AppPlugin).run()
@@ -43,6 +49,8 @@ impl Plugin for AppPlugin {
                 }),
         );
 
+        app.insert_resource(ClearColor(BLACK.into()));
+
         // Add other plugins.
         app.add_plugins((
             asset_tracking::plugin,
@@ -50,10 +58,20 @@ impl Plugin for AppPlugin {
             demo::plugin,
             #[cfg(feature = "dev")]
             dev_tools::plugin,
+            input::plugin,
             menus::plugin,
             screens::plugin,
             theme::plugin,
         ));
+
+        #[cfg(target_os = "macos")]
+        app.add_plugins(SimpleSubsecondPlugin::default());
+
+        // for shape drawing
+        app.add_plugins(Shape2dPlugin::default());
+
+        // add logic plugins
+        app.add_plugins(wildfire::plugin);
 
         // Order new `AppSystems` variants by adding them here:
         app.configure_sets(
@@ -97,6 +115,10 @@ struct Pause(pub bool);
 #[derive(SystemSet, Copy, Clone, Eq, PartialEq, Hash, Debug)]
 struct PausableSystems;
 
+#[derive(Debug, Clone, Copy, Component, Reflect)]
+#[reflect(Component)]
+pub struct MainCamera;
+
 fn spawn_camera(mut commands: Commands) {
-    commands.spawn((Name::new("Camera"), Camera2d));
+    commands.spawn((Name::new("Camera"), Camera2d, MainCamera));
 }

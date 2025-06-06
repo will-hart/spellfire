@@ -1,4 +1,11 @@
 # Spellfire
 
 This project was generated using the [Bevy New 2D](https://github.com/TheBevyFlock/bevy_new_2d) template.
-Check out the [documentation](https://github.com/TheBevyFlock/bevy_new_2d/blob/main/README.md) to get started!
+
+## Note about hot-patching
+
+Hot patching is disabled on Windows for performance reasons. On MacOS, run with:
+
+```
+BEVY_ASSET_ROOT="$PWD" dx serve --hot-patch
+```

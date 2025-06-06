@@ -5,6 +5,8 @@ mod loading;
 mod splash;
 mod title;
 
+pub use gameplay::{BuildingType, EndlessMode, PlayerResources};
+
 use bevy::prelude::*;
 
 pub(super) fn plugin(app: &mut App) {
