@@ -229,17 +229,11 @@ fn handle_despawned_buildings(
     match building_type {
         BuildingType::ManaForge => {
             resources.mana_drain -= 3;
-            // no return because we have chain reaction
         }
         BuildingType::Minotaur => {
             resources.mana_drain += 1;
-            // no chain reaction
-            return;
         }
-        BuildingType::LumberMill => {
-            // no chain reaction
-            return;
-        }
+        BuildingType::LumberMill => {}
     }
 }
 
