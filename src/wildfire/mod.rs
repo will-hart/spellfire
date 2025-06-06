@@ -198,6 +198,8 @@ impl std::fmt::Display for TerrainCellState {
     }
 }
 
+const DRY_GRASS: Color = Color::Srgba(Srgba::new(0.85, 0.8, 0.21, 1.0));
+
 impl TerrainCellState {
     pub fn mark_dirty(&mut self) {
         self.dirty = true;
@@ -212,7 +214,7 @@ impl TerrainCellState {
                 alpha: 1.0,
             }),
             TerrainType::Grassland => match self.moisture {
-                0.0..0.15 => LIME_500.mix(&WHITE, 0.03).into(),
+                0.0..0.15 => DRY_GRASS,
                 0.15..0.35 => LIME_500.into(),
                 0.35..0.7 => LIME_500.mix(&BLACK, 0.025).into(),
                 _ => LIME_500.mix(&BLACK, 0.05).into(),
