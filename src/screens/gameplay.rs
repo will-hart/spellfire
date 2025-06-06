@@ -304,7 +304,7 @@ fn spawn_toolbar(mut commands: Commands, building_assets: Res<BuildingAssets>) {
             parent
                 .spawn((
                     Name::new("Building button toolbar"),
-                    NodeBuilder::new().build(),
+                    NodeBuilder::new().center_content().build(),
                 ))
                 .with_children(|toolbar| {
                     toolbar.spawn((
