@@ -134,8 +134,9 @@ pub struct NoiseMap {
 }
 
 /// Seeds for mapgen that are "known good"
-pub const GOOD_SEEDS: [i32; 6] = [
+pub const GOOD_SEEDS: [i32; 7] = [
     670947188,
+    -787500401,
     1337,
     618039333,
     -1354068758,

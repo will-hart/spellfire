@@ -13,16 +13,9 @@ use bevy::{
 use bevy_simple_subsecond_system::prelude::*;
 
 use crate::{
-    Pause,
-    demo::level::spawn_level,
-    input::MousePosition,
-    menus::Menu,
-    screens::{
-        Screen,
-        gameplay::building::{ManaLine, ParentManaForge, SpawnManaForge, SpawnMinotaur},
-    },
-    theme::node_builder::NodeBuilder,
-    wildfire::{GameMap, OnLightningStrike, WindDirection},
+    demo::level::spawn_level, input::MousePosition, menus::Menu, screens::{
+        gameplay::building::{BuildingAssets, ManaLine, ParentManaForge, SpawnManaForge, SpawnMinotaur}, Screen
+    }, theme::node_builder::NodeBuilder, wildfire::{GameMap, OnLightningStrike, WindDirection}, Pause
 };
 
 mod building;
@@ -218,7 +211,7 @@ fn toolbar_node() -> NodeBuilder {
 fn toolbar_button(
     toolbar: &mut RelatedSpawnerCommands<ChildOf>,
     mode: BuildingMode,
-    button_text: impl Into<String>,
+    image: Handle<Image>,
     hover_text: impl Into<String>,
     selected_text: impl Into<String>,
 ) {
@@ -235,7 +228,13 @@ fn toolbar_button(
                 .margin(UiRect::right(Val::Px(10.0)))
                 .build(),
             Button,
-            children![(Text::new(button_text), TextFont::from_font_size(12.0))],
+            children![
+                ImageNode {
+                    image,
+                    ..default()
+                    
+                }
+        ],
         ))
         .observe(
             move |_trigger: Trigger<Pointer<Over>>, mode: Res<BuildingMode>, mut hint: ResMut<BuildTextHint>| {
@@ -250,7 +249,7 @@ fn toolbar_button(
             move |_trigger: Trigger<Pointer<Click>>,
                   mut new_mode: ResMut<BuildingMode>,
                   mut hint: ResMut<BuildTextHint>| {
-                info!("Placing {mode:?}");
+                info!("Setting building mode to {mode:?}");
                 *new_mode = mode.clone();
                 hint.set(selected.clone());
             },
@@ -263,7 +262,7 @@ fn toolbar_button(
         );
 }
 
-fn spawn_toolbar(mut commands: Commands) {
+fn spawn_toolbar(mut commands: Commands, building_assets: Res<BuildingAssets>) {
     commands
         .spawn((
             toolbar_node()
@@ -303,25 +302,31 @@ fn spawn_toolbar(mut commands: Commands) {
                     NodeBuilder::new().build(),
                 ))
                 .with_children(|toolbar| {
+                    toolbar.spawn((
+                        NodeBuilder::new().margin(UiRect::right(Val::Px(10.0))).build(),
+                        Text::new("Buildings: "),
+                        TextFont::from_font_size(12.)
+                    ));
+                    
                     toolbar_button(
                         toolbar,
                         BuildingMode::Lightning,
-                        "Lightning Bolt",
-                        "Cost: Free! Be a pyro and start some fires :D",
+                        building_assets.lightning.clone(),
+                        "Lightning Bolt. Be a pyro and start some fires :D",
                         "Click to trigger a lightning bolt, press <space> to stop."
                     );
                     
                     toolbar_button(toolbar,
                          BuildingMode::PlaceManaForge,
-                          "Mana Forge",
-                          "Cost: 50 Mana. Produces Mana (3/sec), powers other buildings.",
+                         building_assets.mana_forge.clone(),
+                          "MANA FORGE. Cost: 50 Mana. Produces Mana (3/sec), powers other buildings.",
                            "Click the map to place a forge. Press <space> to cancel placement."
                     );
                     
                     toolbar_button(toolbar,
                         BuildingMode::PlaceMinotaur,
-                        "Minotaur",
-                        "Cost: 40 Mana. Consumes 1 mana per second and turns trees into grass into dirt.",
+                        building_assets.minotaur.clone(),
+                        "MINOTAUR HUTCH. Cost: 40 Mana. The minotaur inside consumes 1 mana / sec and turns trees into grass into dirt.",
                         "Click the map to place a minotaur camp (close to a mana forge). Press <space> to cancel placement."
                     );
                 });
@@ -424,8 +429,10 @@ fn handle_build_mode_change(
         }
         BuildingMode::Lightning | BuildingMode::PlaceManaForge => {}
         BuildingMode::PlaceMinotaur => {
+            info!("Spawning building mode items for minotaur placement");
             commands.spawn((
                 ParentManaForge(None),
+                CursorModeItem,
                 ManaLine {
                     from: Vec3::ZERO,
                     to: Vec3::ZERO,
