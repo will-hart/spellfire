@@ -3,7 +3,7 @@
 use crate::{
     asset_tracking::ResourceHandles,
     menus::Menu,
-    screens::Screen,
+    screens::{EndlessMode, Screen},
     theme::{node_builder::NodeBuilder, widget},
 };
 use bevy::prelude::*;
@@ -13,6 +13,8 @@ pub(super) fn plugin(app: &mut App) {
 }
 
 fn spawn_main_menu(mut commands: Commands) {
+    commands.remove_resource::<EndlessMode>();
+
     commands.spawn((
         Name::new("Main Menu"),
         NodeBuilder::new()
@@ -45,9 +47,12 @@ fn spawn_main_menu(mut commands: Commands) {
 
 fn enter_loading_or_gameplay_screen(
     _: Trigger<Pointer<Click>>,
+    mut commands: Commands,
     resource_handles: Res<ResourceHandles>,
     mut next_screen: ResMut<NextState<Screen>>,
 ) {
+    commands.init_resource::<EndlessMode>();
+
     if resource_handles.is_all_done() {
         next_screen.set(Screen::Gameplay);
     } else {

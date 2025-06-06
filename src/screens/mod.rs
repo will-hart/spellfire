@@ -5,7 +5,7 @@ mod loading;
 mod splash;
 mod title;
 
-pub use gameplay::PlayerResources;
+pub use gameplay::{BuildingType, EndlessMode, PlayerResources};
 
 use bevy::prelude::*;
 

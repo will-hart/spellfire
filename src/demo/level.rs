@@ -5,7 +5,7 @@ use bevy::prelude::*;
 use crate::{
     asset_tracking::LoadResource,
     screens::{PlayerResources, Screen},
-    wildfire::{GameMap, OnSpawnMap, SpawnedMap},
+    wildfire::{GOOD_SEEDS, GameMap, OnSpawnMap, SpawnedMap},
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -33,10 +33,7 @@ impl FromWorld for LevelAssets {
 
 /// A system that spawns the main level.
 pub fn spawn_level(mut commands: Commands) {
-    commands.trigger(OnSpawnMap {
-        size: UVec2::splat(256),
-        sprite_size: 4.0,
-    });
+    commands.trigger(OnSpawnMap::new(GOOD_SEEDS[0]));
 
     commands.init_resource::<PlayerResources>();
 }

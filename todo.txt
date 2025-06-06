@@ -1,8 +1,8 @@
 Basic gameplay
 
 - [ ] hover UI for buildings with info
-- [ ] seed mapgen and pick some good seeds
 - [ ] child buildings consume mana each time they "produce"
+- [x] seed mapgen and pick some good seeds
 - [x] show lines between mana forge and child buidings
 - [x] chain react child buildings when mana forge is blown up
 
@@ -14,7 +14,7 @@ Building placement
 
 Victory conditions
 
-- [ ] add city to defend
+- [ ] add city to defend - chain of mana forges from this building
 - [ ] add victory condition when fire is out
 - [ ] add defeat condition when fire burns target
 
@@ -35,4 +35,4 @@ Polish
 
 - [ ] menu rejig - show a fire in the background, buttons down the bottom
 - [ ] music
-
+- [ ] redraw map without respawning sprites (see map::redraw_map system)

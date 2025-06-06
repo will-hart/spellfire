@@ -18,7 +18,7 @@ mod map;
 mod wind;
 
 pub use lightning::OnLightningStrike;
-pub use map::GameMap;
+pub use map::{GOOD_SEEDS, GameMap};
 pub use wind::WindDirection;
 
 pub fn plugin(app: &mut App) {
@@ -36,6 +36,17 @@ pub fn plugin(app: &mut App) {
 pub struct OnSpawnMap {
     pub size: UVec2,
     pub sprite_size: f32,
+    pub seed: i32,
+}
+
+impl OnSpawnMap {
+    pub fn new(seed: i32) -> Self {
+        Self {
+            size: UVec2::splat(256),
+            sprite_size: 4.0,
+            seed: seed,
+        }
+    }
 }
 
 #[derive(Component, Debug, Clone, Copy, Reflect)]
@@ -47,14 +58,16 @@ pub struct SpawnedMap;
 pub struct TerrainCell;
 
 fn spawn_map(trigger: Trigger<OnSpawnMap>, mut commands: Commands) {
-    info!("Spawning map");
-
     let data = trigger.event();
     let size_x = data.size.x;
     let size_y = data.size.y;
     let sprite_size = data.sprite_size;
+    info!(
+        "Spawning {size_x}x{size_y} map with {sprite_size}px grid. Seed - {}",
+        data.seed
+    );
 
-    let mut map = GameMap::new(sprite_size, size_x as usize, size_y as usize);
+    let mut map = GameMap::new(data.seed, sprite_size, size_x as usize, size_y as usize);
 
     commands
         .spawn((
@@ -168,9 +181,9 @@ impl std::fmt::Display for TerrainCellState {
                         ""
                     },
                     if self.moisture < 0.3 {
-                        "Wet "
-                    } else if self.moisture > 0.8 {
                         "Dry "
+                    } else if self.moisture > 0.8 {
+                        "Wet "
                     } else {
                         ""
                     },
@@ -198,10 +211,10 @@ impl TerrainCellState {
                 blue: 0.08,
                 alpha: 1.0,
             }),
-            TerrainType::Grassland => match self.fuel_load {
-                0 | 1 => LIME_500.mix(&WHITE, 0.03).into(),
-                2 | 3 => LIME_500.into(),
-                4 | 5 => LIME_500.mix(&BLACK, 0.025).into(),
+            TerrainType::Grassland => match self.moisture {
+                0.0..0.15 => LIME_500.mix(&WHITE, 0.03).into(),
+                0.15..0.35 => LIME_500.into(),
+                0.35..0.7 => LIME_500.mix(&BLACK, 0.025).into(),
                 _ => LIME_500.mix(&BLACK, 0.05).into(),
             },
             TerrainType::Tree => match self.fuel_load {

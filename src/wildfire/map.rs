@@ -2,13 +2,16 @@
 
 use std::time::Duration;
 
-use bevy::{prelude::*, time::common_conditions::on_timer};
+use bevy::{
+    input::common_conditions::input_just_pressed, prelude::*, time::common_conditions::on_timer,
+};
 use fastnoise_lite::FastNoiseLite;
 use rand::Rng;
 
 use crate::{
     Pause,
-    wildfire::{TerrainCell, TerrainCellState, TerrainType, WindDirection},
+    screens::{BuildingType, EndlessMode, Screen},
+    wildfire::{OnSpawnMap, SpawnedMap, TerrainCell, TerrainCellState, TerrainType, WindDirection},
 };
 
 /// the amount of cells in the neighbourhood
@@ -71,6 +74,16 @@ pub(super) fn plugin(app: &mut App) {
         Update,
         update_sprites.run_if(in_state(Pause(false)).and(resource_exists::<GameMap>)),
     );
+
+    app.add_systems(
+        Update,
+        redraw_map.run_if(
+            in_state(Screen::Gameplay)
+                .and(in_state(Pause(false)))
+                .and(resource_exists::<EndlessMode>)
+                .and(input_just_pressed(KeyCode::Space)),
+        ),
+    );
 }
 
 fn update_map(mut map: ResMut<GameMap>, wind: Res<WindDirection>) {
@@ -98,15 +111,43 @@ fn update_sprites(mut map: ResMut<GameMap>, mut sprites: Query<&mut Sprite, With
     }
 }
 
+/// TODO: in theory here we could redraw without respawning the sprites
+fn redraw_map(
+    mut commands: Commands,
+    spawned_maps: Query<Entity, With<SpawnedMap>>,
+    buildings: Query<Entity, With<BuildingType>>,
+) {
+    for map in spawned_maps {
+        commands.entity(map).despawn();
+    }
+
+    for building in buildings {
+        commands.entity(building).despawn();
+    }
+
+    let mut rng = rand::rng();
+    commands.trigger(OnSpawnMap::new(rng.random()))
+}
+
 pub struct NoiseMap {
     noise: FastNoiseLite,
 }
 
+/// Seeds for mapgen that are "known good"
+pub const GOOD_SEEDS: [i32; 6] = [
+    670947188,
+    1337,
+    618039333,
+    -1354068758,
+    1566845181,
+    -63050108,
+];
+
 impl NoiseMap {
     /// Creates a new noise map
-    pub fn new() -> Self {
+    pub fn new(seed: i32) -> Self {
         Self {
-            noise: FastNoiseLite::new(),
+            noise: FastNoiseLite::with_seed(seed),
         }
     }
 
@@ -167,8 +208,8 @@ pub struct GameMap {
 }
 
 impl GameMap {
-    pub fn new(sprite_size: f32, size_x: usize, size_y: usize) -> Self {
-        let noise_map = NoiseMap::new();
+    pub fn new(seed: i32, sprite_size: f32, size_x: usize, size_y: usize) -> Self {
+        let noise_map = NoiseMap::new(seed);
         let mut data = vec![vec![TerrainCellState::default(); size_x]; size_y];
 
         for y in 0..size_y {

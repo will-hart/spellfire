@@ -22,6 +22,7 @@ use crate::{
 };
 
 mod building;
+pub use building::BuildingType;
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<EnergyTextMarker>();
@@ -29,6 +30,7 @@ pub(super) fn plugin(app: &mut App) {
     app.register_type::<CursorModeItem>();
     app.register_type::<PlayerResources>();
     app.register_type::<BuildingBar>();
+    app.register_type::<EndlessMode>();
 
     app.init_resource::<BuildingMode>();
 
@@ -82,6 +84,10 @@ pub(super) fn plugin(app: &mut App) {
             .run_if(in_state(Screen::Gameplay).and(in_state(Pause(false)))),
     );
 }
+
+#[derive(Resource, Reflect, Debug, Clone, Default)]
+#[reflect(Resource, Default)]
+pub struct EndlessMode;
 
 #[derive(Resource, Reflect, Debug, Clone)]
 #[reflect(Resource)]
