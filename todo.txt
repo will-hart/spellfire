@@ -9,7 +9,7 @@ Basic gameplay
 Building placement
 
 - [ ] disable invalid buttons (i.e. not enough resources)
-- [ ] child buildingsget hurt by fire
+- [x] child buildings get hurt by fire
 - [x] make sure building sprites are centered on grid coords
 - [x] display empty mana line while placing units (to closest parent)
 - [x] place buildings only when in range of a mana forge

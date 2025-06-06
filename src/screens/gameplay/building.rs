@@ -1,11 +1,20 @@
 //! Logic + code for placing buildings
 
+use std::time::Duration;
+
 use bevy::{
     image::{ImageLoaderSettings, ImageSampler},
     prelude::*,
+    time::common_conditions::on_timer,
 };
+use rand::Rng;
 
-use crate::asset_tracking::LoadResource;
+use crate::{
+    Pause,
+    asset_tracking::LoadResource,
+    screens::{PlayerResources, Screen},
+    wildfire::{GameMap, OnLightningStrike},
+};
 
 mod mana_forge;
 mod mana_line;
@@ -25,6 +34,16 @@ pub(super) fn plugin(app: &mut App) {
     app.load_resource::<BuildingAssets>();
 
     app.add_plugins((mana_forge::plugin, mana_line::plugin, minotaur::plugin));
+
+    app.add_systems(
+        Update,
+        burn_buildings.run_if(
+            on_timer(Duration::from_millis(100))
+                .and(in_state(Pause(false)))
+                .and(in_state(Screen::Gameplay))
+                .and(resource_exists::<PlayerResources>),
+        ),
+    );
 }
 
 #[derive(Component, Reflect, Debug, Clone, Copy)]
@@ -95,4 +114,39 @@ pub struct ManaLine {
 #[reflect(Component)]
 pub struct ManaLineBalls {
     pub mana_dot_distance: f32,
+}
+
+/// Burns buildings that are consumed by fire
+fn burn_buildings(
+    mut commands: Commands,
+    map: Res<GameMap>,
+    forges: Query<(Entity, &BuildingLocation, &BuildingType)>,
+) {
+    for (entity, loc, building_type) in &forges {
+        // check if there is fire near the mana forge
+        if map.is_on_fire(loc.0)
+            || map.is_on_fire(loc.0 + IVec2::new(1, 0))
+            || map.is_on_fire(loc.0 + IVec2::new(1, 1))
+            || map.is_on_fire(loc.0 + IVec2::new(0, 1))
+        {
+            info!("{building_type:?} destroyed by fire");
+            commands.entity(entity).despawn();
+
+            if !matches!(building_type, BuildingType::ManaForge) {
+                return;
+            }
+
+            // spawn fires around
+            let mut rng = rand::thread_rng();
+            let num_fires = rng.gen_range(2..=5);
+            info!("Spawning {num_fires} other fires");
+
+            // TODO: JUICE! spawn fireballs to show the effects
+            for _ in 0..num_fires {
+                let fire_tile_coords =
+                    loc.0 + IVec2::new(rng.gen_range(-10..=10), rng.gen_range(-10..10));
+                commands.trigger(OnLightningStrike(fire_tile_coords));
+            }
+        }
+    }
 }
