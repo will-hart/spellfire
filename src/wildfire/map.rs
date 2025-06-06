@@ -81,7 +81,7 @@ pub(super) fn plugin(app: &mut App) {
             in_state(Screen::Gameplay)
                 .and(in_state(Pause(false)))
                 .and(resource_exists::<EndlessMode>)
-                .and(input_just_pressed(KeyCode::Space)),
+                .and(input_just_pressed(KeyCode::KeyR)),
         ),
     );
 }

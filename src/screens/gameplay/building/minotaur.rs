@@ -13,8 +13,8 @@ use crate::{
         gameplay::{
             BuildingMode,
             building::{
-                BuildingAssets, BuildingLocation, BuildingType, ManaLine, ParentManaForge,
-                mana_forge::ManaForge,
+                BuildingAssets, BuildingLocation, BuildingType, ManaLine, ManaLineBalls,
+                ParentManaForge, mana_forge::ManaForge,
             },
         },
     },
@@ -26,15 +26,11 @@ pub(super) fn plugin(app: &mut App) {
 
     app.add_systems(
         Update,
-        (
-            produce_from_minotaur,
-            while_placing_minotaur.run_if(resource_exists::<ParentManaForge>),
-        )
-            .run_if(
-                in_state(Pause(false))
-                    .and(in_state(Screen::Gameplay))
-                    .and(resource_exists::<PlayerResources>),
-            ),
+        (produce_from_minotaur, while_placing_minotaur).distributive_run_if(
+            in_state(Pause(false))
+                .and(in_state(Screen::Gameplay))
+                .and(resource_exists::<PlayerResources>),
+        ),
     );
 }
 
@@ -52,7 +48,7 @@ fn spawn_minotaur(
     mut commands: Commands,
     mut resources: ResMut<PlayerResources>,
     mut building_mode: ResMut<BuildingMode>,
-    parent_forge: Res<ParentManaForge>,
+    parent_forge: Single<(Entity, &ParentManaForge)>,
     buildings: Res<BuildingAssets>,
     map: Res<GameMap>,
     forges: Query<&Transform, With<ManaForge>>,
@@ -62,23 +58,24 @@ fn spawn_minotaur(
         return;
     }
 
-    let Some(parent) = parent_forge.0 else {
-        warn!("No parent mana forge, skipping minotaur placement");
+    let (parent_forge_entity, parent_forge) = *parent_forge;
+    let Some(parent_forge) = parent_forge.0 else {
+        warn!("No parent mana forge inside tracking, skipping minotaur placement");
         return;
     };
 
+    commands.entity(parent_forge_entity).despawn();
     resources.mana -= 30;
-    commands.remove_resource::<ParentManaForge>();
 
     let coords = map.tile_coords(config.0);
     info!("Spawning minotaur at {coords}");
 
-    let Ok(parent_tx) = forges.get(parent) else {
+    let Ok(parent_tx) = forges.get(parent_forge) else {
         warn!("Unable to find parent mana forge");
         return;
     };
 
-    commands.entity(parent).with_children(|builder| {
+    commands.entity(parent_forge).with_children(|builder| {
         builder.spawn((
             BuildingLocation(coords),
             BuildingType::Minotaur,
@@ -86,8 +83,9 @@ fn spawn_minotaur(
             ManaLine {
                 from: parent_tx.translation.truncate().extend(0.05),
                 to: config.0.extend(0.05),
-                mana_dot_distance: 0.0,
+                disabled: false,
             },
+            ManaLineBalls::default(),
             StateScoped(Screen::Gameplay),
             Transform::from_xyz(
                 // coords.x as f32 * map.sprite_size,
@@ -176,33 +174,45 @@ fn while_placing_minotaur(
     mouse: Res<MousePosition>,
     mode: Res<BuildingMode>,
     map: Res<GameMap>,
-    mut nearest_forge: ResMut<ParentManaForge>,
-    forges: Query<(Entity, &BuildingLocation), With<ManaForge>>,
+    mut parent_forge: Single<(&mut ParentManaForge, &mut ManaLine)>,
+    forges: Query<(Entity, &Transform), With<ManaForge>>,
 ) {
-    const MAX_DISTANCE: i32 = 30;
+    const MAX_DISTANCE_SQR: f32 = 50.0 * 50.0;
 
     // unlikely but exit early anyway
     if !matches!(*mode, BuildingMode::PlaceMinotaur) {
         return;
     }
 
+    let (forge, parent_mana_line) = &mut *parent_forge;
+
     // clear previous closest
-    let mouse_pos = map.tile_coords(mouse.world_pos);
+    let mouse_pos = mouse.world_pos;
     let mut distances = forges
         .iter()
-        .filter_map(|(e, loc)| {
-            let distance_to_forge = mouse_pos.distance_squared(loc.0);
-            if distance_to_forge > MAX_DISTANCE * MAX_DISTANCE {
+        .filter_map(|(e, tx)| {
+            let distance_to_forge = mouse_pos.distance_squared(tx.translation.truncate());
+            if distance_to_forge > MAX_DISTANCE_SQR * map.sprite_size {
                 return None;
             }
 
-            Some((e, distance_to_forge))
+            Some((e, distance_to_forge, tx.translation.truncate()))
         })
         .collect::<Vec<_>>();
 
-    distances.sort_by(|(_, a), (_, b)| a.cmp(b));
+    distances.sort_by(|(_, a, _), (_, b, _)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
 
-    nearest_forge.0 = distances.first().map(|(e, _)| e).copied();
+    let Some((closest_forge, tx)) = distances.first().map(|(e, _, tx)| (e, tx)) else {
+        forge.0 = None;
+        parent_mana_line.disabled = true;
+
+        return;
+    };
+
+    forge.0 = Some(*closest_forge);
+    parent_mana_line.from = tx.extend(0.05);
+    parent_mana_line.to = mouse_pos.extend(0.05);
+    parent_mana_line.disabled = false;
 }
 
 #[cfg_attr(target_os = "macos", hot)]

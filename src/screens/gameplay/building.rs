@@ -19,6 +19,7 @@ pub(super) fn plugin(app: &mut App) {
     app.register_type::<BuildingType>();
     app.register_type::<BuildingLocation>();
     app.register_type::<ManaLine>();
+    app.register_type::<ManaLineBalls>();
     app.register_type::<ParentManaForge>();
 
     app.load_resource::<BuildingAssets>();
@@ -69,8 +70,8 @@ impl FromWorld for BuildingAssets {
 #[reflect(Component)]
 pub struct BuildingLocation(pub IVec2);
 
-#[derive(Resource, Reflect, Debug, Copy, Clone, Default)]
-#[reflect(Resource)]
+#[derive(Component, Reflect, Debug, Copy, Clone, Default)]
+#[reflect(Component)]
 pub struct ParentManaForge(pub Option<Entity>);
 
 #[derive(Component, Reflect, Debug, Copy, Clone)]
@@ -78,5 +79,11 @@ pub struct ParentManaForge(pub Option<Entity>);
 pub struct ManaLine {
     pub from: Vec3,
     pub to: Vec3,
+    pub disabled: bool,
+}
+
+#[derive(Component, Reflect, Debug, Copy, Clone, Default)]
+#[reflect(Component)]
+pub struct ManaLineBalls {
     pub mana_dot_distance: f32,
 }

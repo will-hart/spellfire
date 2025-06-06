@@ -15,7 +15,7 @@ use crate::{
     menus::Menu,
     screens::{
         Screen,
-        gameplay::building::{ParentManaForge, SpawnManaForge, SpawnMinotaur},
+        gameplay::building::{ManaLine, ParentManaForge, SpawnManaForge, SpawnMinotaur},
     },
     theme::node_builder::NodeBuilder,
     wildfire::{GameMap, OnLightningStrike, WindDirection},
@@ -315,9 +315,17 @@ fn draw_building_bar(
         });
 }
 
-fn cancel_cursor_mode(mut mode: ResMut<BuildingMode>) {
-    info!("Resetting curs mode");
+fn cancel_cursor_mode(
+    mut commands: Commands,
+    mut mode: ResMut<BuildingMode>,
+    forge_placements: Query<Entity, With<ParentManaForge>>,
+) {
+    info!("Resetting cursor mode");
     *mode = BuildingMode::None;
+
+    for parent in forge_placements {
+        commands.entity(parent).despawn();
+    }
 }
 
 #[derive(Component, Reflect, Debug, Clone, Default)]
@@ -338,7 +346,14 @@ fn handle_build_mode_change(
     match *mode {
         BuildingMode::None | BuildingMode::Lightning | BuildingMode::PlaceManaForge => {}
         BuildingMode::PlaceMinotaur => {
-            commands.insert_resource(ParentManaForge(None));
+            commands.spawn((
+                ParentManaForge(None),
+                ManaLine {
+                    from: Vec3::ZERO,
+                    to: Vec3::ZERO,
+                    disabled: true,
+                },
+            ));
         }
     }
 

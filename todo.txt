@@ -10,6 +10,7 @@ Building placement
 
 - [ ] make sure building sprites are centered on grid coords
 - [ ] disable invalid buttons (i.e. not enough resources)
+- [x] display empty mana line while placing units (to closest parent)
 - [x] place buildings only when in range of a mana forge
 
 Victory conditions
@@ -36,3 +37,30 @@ Polish
 - [ ] menu rejig - show a fire in the background, buttons down the bottom
 - [ ] music
 - [ ] redraw map without respawning sprites (see map::redraw_map system)
+- [ ] scenarios - specify seed, city location, fire locations + time, time limit?
+
+Bugs
+
+
+- [ ] can place buildings off the map
+- [ ] sometimes cancelling building placement while placing (with manalines) might cause a problem?
+- [ ] Minotaur right on the edge of the map
+
+thread 'Compute Task Pool (1)' panicked at src\screens\gameplay\building\minotaur.rs:153:39:
+index out of bounds: the len is 256 but the index is 256
+note: run with `RUST_BACKTRACE=1` environment variable to display a backtrace
+Encountered a panic in system `spellfire::screens::gameplay::building::minotaur::produce_from_minotaur`!
+Encountered a panic in system `bevy_app::main_schedule::Main::run_main`!
+error: process didn't exit successfully: `target\debug\spellfire.exe` (exit code: 101)
+
+in minotaur::move_to_grass:
+
+```
+            .filter_map(
+                // limit to trees and grass
+                |coord| match map.data[coord.y as usize][coord.x as usize].terrain { // line 153
+                    TerrainType::Grassland | TerrainType::Tree => Some(coord),
+                    _ => None,
+                },
+            )
+````
