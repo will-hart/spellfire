@@ -1,6 +1,6 @@
 use bevy::{input::mouse::MouseWheel, prelude::*};
 
-use crate::{input::MousePosition, MainCamera, Pause};
+use crate::{MainCamera, Pause, input::MousePosition};
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<MouseWheelGestures>();
