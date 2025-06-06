@@ -6,10 +6,15 @@ use crate::{
     screens::{EndlessMode, Screen},
     theme::{node_builder::NodeBuilder, widget},
 };
-use bevy::prelude::*;
+use bevy::{audio::Volume, prelude::*};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Menu::Main), spawn_main_menu);
+    app.add_systems(Startup, lower_volume_you_psychos);
+}
+
+fn lower_volume_you_psychos(mut vol: ResMut<GlobalVolume>) {
+    *vol = GlobalVolume::from(Volume::Linear(0.5));
 }
 
 fn spawn_main_menu(mut commands: Commands) {
