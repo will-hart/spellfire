@@ -236,6 +236,24 @@ impl GameMap {
         }
     }
 
+    /// Gets coordinates of valid cells within a given range of a point
+    pub fn cells_within_range(&self, center: IVec2, range: i32) -> impl Iterator<Item = IVec2> {
+        ((center.y - range).max(0)..=(center.y + range).max(0)).flat_map(move |y| {
+            ((center.x - range).max(0)..=(center.x + range).max(0)).filter_map(move |x| {
+                let v = IVec2::new(x, y);
+
+                if v.distance_squared(center) > range * range
+                    || x as usize >= self.size_x
+                    || y as usize >= self.size_y
+                {
+                    None
+                } else {
+                    Some(v)
+                }
+            })
+        })
+    }
+
     /// Checks whether the cell at the given tile coords is on fire
     pub fn is_on_fire(&self, loc: IVec2) -> bool {
         if let Some(cell) = self.get(loc) {

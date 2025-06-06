@@ -38,7 +38,7 @@ fn spawn_main_menu(mut commands: Commands) {
         #[cfg(target_family = "wasm")]
         children![
             widget::button_menu("Story Mode", enter_loading_or_gameplay_screen),
-            widget::button_menu("Endless Mode", enter_loading_or_gameplay_screen),
+            widget::button_menu("Endless Mode", enter_loading_or_gameplay_screen_endless),
             widget::button_menu("Settings", open_settings_menu),
             widget::button_menu("Credits", open_credits_menu),
         ],
