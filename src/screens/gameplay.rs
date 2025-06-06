@@ -1,8 +1,12 @@
 //! The screen state for the main gameplay.
 
 use bevy::{
-    color::palettes::tailwind::SLATE_800, input::common_conditions::input_just_pressed,
-    math::CompassOctant, prelude::*, ui::Val::*,
+    color::palettes::tailwind::{SLATE_700, SLATE_800},
+    ecs::relationship::RelatedSpawnerCommands,
+    input::common_conditions::input_just_pressed,
+    math::CompassOctant,
+    prelude::*,
+    ui::Val::*,
 };
 
 #[cfg(target_os = "macos")]
@@ -29,17 +33,17 @@ pub(super) fn plugin(app: &mut App) {
     app.register_type::<BuildingMode>();
     app.register_type::<CursorModeItem>();
     app.register_type::<PlayerResources>();
-    app.register_type::<BuildingBar>();
+    app.register_type::<BuildTextHint>();
+    app.register_type::<BuildTextMarker>();
     app.register_type::<EndlessMode>();
+    app.register_type::<BuildingHintToolbar>();
 
     app.init_resource::<BuildingMode>();
+    app.init_resource::<BuildTextHint>();
 
     app.add_plugins(building::plugin);
 
-    app.add_systems(
-        OnEnter(Screen::Gameplay),
-        (spawn_level, spawn_toolbar, draw_building_bar),
-    );
+    app.add_systems(OnEnter(Screen::Gameplay), (spawn_level, spawn_toolbar));
 
     // Toggle pause on key press.
     app.add_systems(
@@ -75,6 +79,7 @@ pub(super) fn plugin(app: &mut App) {
         Update,
         (
             update_toolbar.run_if(resource_exists::<PlayerResources>),
+            update_build_hint_ui,
             handle_mouse_click_input.run_if(input_just_pressed(MouseButton::Left)),
             handle_build_mode_change
                 .run_if(resource_changed::<BuildingMode>)
@@ -145,6 +150,26 @@ fn handle_mouse_click_input(
     }
 }
 
+#[derive(Resource, Reflect, Debug, Default)]
+#[reflect(Resource)]
+pub struct BuildTextHint(pub Option<String>);
+
+impl BuildTextHint {
+    /// Clears the text
+    pub fn clear(&mut self) {
+        self.0 = None;
+    }
+
+    /// Sets the text
+    pub fn set(&mut self, text: impl Into<String>) {
+        self.0 = Some(text.into());
+    }
+}
+
+#[derive(Component, Reflect, Debug, Clone, Copy)]
+#[reflect(Component)]
+pub struct BuildTextMarker;
+
 fn spawn_pause_overlay(mut commands: Commands) {
     commands.spawn((
         Name::new("Pause Overlay"),
@@ -175,52 +200,147 @@ pub struct EnergyTextMarker;
 #[reflect(Component)]
 pub struct WindTextMarker;
 
+#[derive(Component, Reflect, Debug, Clone, Copy)]
+#[reflect(Component)]
+pub struct BuildingHintToolbar;
+
 fn toolbar_node() -> NodeBuilder {
     NodeBuilder::new()
         .position(PositionType::Absolute)
         .width(Val::Percent(100.0))
         .height(Val::Px(35.0))
+        .padding(UiRect::horizontal(Val::Px(10.0)))
         .left(0.0)
         .background(SLATE_800)
         .flex_direction(FlexDirection::Row)
-        .align(AlignItems::Center)
 }
 
-fn toolbar_button(text: impl Into<String>) -> impl Bundle {
-    (
-        NodeBuilder::new()
-            // .width(Val::Px(200.0))
-            .height(Val::Px(32.0))
-            .center_content()
-            .margin(UiRect::right(Val::Px(10.0)))
-            .build(),
-        Button,
-        children![(Text::new(text), TextFont::from_font_size(12.0))],
-    )
+fn toolbar_button(
+    toolbar: &mut RelatedSpawnerCommands<ChildOf>,
+    mode: BuildingMode,
+    button_text: impl Into<String>,
+    hover_text: impl Into<String>,
+    selected_text: impl Into<String>,
+) {
+    let mode = mode.clone();
+    let selected = selected_text.into();
+    let hover = hover_text.into();
+
+    toolbar
+        .spawn((
+            NodeBuilder::new()
+                // .width(Val::Px(200.0))
+                .height(Val::Px(32.0))
+                .center_content()
+                .margin(UiRect::right(Val::Px(10.0)))
+                .build(),
+            Button,
+            children![(Text::new(button_text), TextFont::from_font_size(12.0))],
+        ))
+        .observe(
+            move |_trigger: Trigger<Pointer<Over>>, mode: Res<BuildingMode>, mut hint: ResMut<BuildTextHint>| {
+                if !matches!(*mode, BuildingMode::None) {
+                    return;
+                }
+                
+                hint.set(hover.clone());
+            },
+        )
+        .observe(
+            move |_trigger: Trigger<Pointer<Click>>,
+                  mut new_mode: ResMut<BuildingMode>,
+                  mut hint: ResMut<BuildTextHint>| {
+                info!("Placing {mode:?}");
+                *new_mode = mode.clone();
+                hint.set(selected.clone());
+            },
+        ).observe(
+            |_trigger: Trigger<Pointer<Out>>, mode: Res<BuildingMode>, mut hint: ResMut<BuildTextHint> | {
+                if matches!(*mode, BuildingMode::None) {
+                    hint.clear();
+                }
+            }
+        );
 }
 
 fn spawn_toolbar(mut commands: Commands) {
+    commands
+        .spawn((
+            toolbar_node()
+                .top(0.0)
+                .justify(JustifyContent::SpaceBetween)
+                .align_content(AlignContent::SpaceBetween)
+                .build(),
+            StateScoped(Screen::Gameplay),
+        ))
+        .with_children(|parent| {
+            parent.spawn((
+                Name::new("Resource Toolbar"),
+                NodeBuilder::new().height(Val::Px(35.0)).center_content().build(),
+                children![
+                    (
+                        EnergyTextMarker,
+                        Text::new("ENERGY: 10"),
+                        TextFont {
+                            font_size: 12.0,
+                            ..default()
+                        }
+                    ),
+                    (
+                        WindTextMarker,
+                        Text::new(""),
+                        TextFont {
+                            font_size: 12.0,
+                            ..default()
+                        }
+                    ),
+                ],
+            ));
+
+            parent
+                .spawn((
+                    Name::new("Building button toolbar"),
+                    NodeBuilder::new().build(),
+                ))
+                .with_children(|toolbar| {
+                    toolbar_button(
+                        toolbar,
+                        BuildingMode::Lightning,
+                        "Lightning Bolt",
+                        "Cost: Free! Be a pyro and start some fires :D",
+                        "Click to trigger a lightning bolt, press <space> to stop."
+                    );
+                    
+                    toolbar_button(toolbar,
+                         BuildingMode::PlaceManaForge,
+                          "Mana Forge",
+                          "Cost: 50 Mana. Produces Mana (3/sec), powers other buildings.",
+                           "Click the map to place a forge. Press <space> to cancel placement."
+                    );
+                    
+                    toolbar_button(toolbar,
+                        BuildingMode::PlaceMinotaur,
+                        "Minotaur",
+                        "Cost: 40 Mana. Consumes 1 mana per second and turns trees into grass into dirt.",
+                        "Click the map to place a minotaur camp (close to a mana forge). Press <space> to cancel placement."
+                    );
+                });
+        });
+
     commands.spawn((
-        toolbar_node().top(0.0).build(),
+        Name::new("Build text toolbar"),
+        BuildingHintToolbar,
         StateScoped(Screen::Gameplay),
-        children![
-            (
-                EnergyTextMarker,
-                Text::new("ENERGY: 10"),
-                TextFont {
-                    font_size: 12.0,
-                    ..default()
-                }
-            ),
-            (
-                WindTextMarker,
-                Text::new(""),
-                TextFont {
-                    font_size: 12.0,
-                    ..default()
-                }
-            )
-        ],
+        toolbar_node()
+            .top(35.0)
+            .center_content()
+            .background(SLATE_700)
+            .build(),
+        children![(
+            BuildTextMarker,
+            Text::new(""),
+            TextFont::from_font_size(12.0),
+        )],
     ));
 }
 
@@ -255,65 +375,19 @@ fn update_toolbar(
     );
 }
 
-#[derive(Component, Reflect, Debug, Clone, Default)]
-#[reflect(Component)]
-pub struct BuildingBar;
-
-#[cfg_attr(target_os = "macos", hot)]
-fn draw_building_bar(
-    mut commands: Commands,
-    mode: Res<BuildingMode>,
-    previous_items: Query<Entity, With<BuildingBar>>,
+fn update_build_hint_ui(
+    build_text: Res<BuildTextHint>,
+    mut toolbar: Single<&mut Visibility, With<BuildingHintToolbar>>,
+    mut hint_text: Single<&mut Text, With<BuildTextMarker>>,
 ) {
-    for entity in &previous_items {
-        commands.entity(entity).despawn();
+    if let Some(text) = &build_text.0 {
+        **toolbar = Visibility::Visible;
+        if hint_text.0 != *text {
+            hint_text.0 = text.clone();
+        }
+    } else {
+        **toolbar = Visibility::Hidden;
     }
-
-    commands
-        .spawn((
-            toolbar_node().bottom(0.0).build(),
-            StateScoped(Screen::Gameplay),
-            BuildingBar,
-        ))
-        .with_children(|builder| match *mode {
-            BuildingMode::None => {
-                builder.spawn(toolbar_button("Lightning Bolt")).observe(
-                    |_trigger: Trigger<Pointer<Click>>, mut mode: ResMut<BuildingMode>| {
-                        info!("Placing Lightning");
-                        *mode = BuildingMode::Lightning;
-                    },
-                );
-                builder.spawn(toolbar_button("Mana Forge (50)")).observe(
-                    |_trigger: Trigger<Pointer<Click>>, mut mode: ResMut<BuildingMode>| {
-                        info!("Placing Mana Forge");
-                        *mode = BuildingMode::PlaceManaForge;
-                    },
-                );
-                builder.spawn(toolbar_button("Minotaur (40)")).observe(
-                    |_trigger: Trigger<Pointer<Click>>, mut mode: ResMut<BuildingMode>| {
-                        info!("Placing Minotaur");
-                        *mode = BuildingMode::PlaceMinotaur;
-                    },
-                );
-            }
-            BuildingMode::Lightning => {
-                builder.spawn((Text::new("Click to start some fires (you pyro). Press <space> to cancel."), TextFont::from_font_size(12.0)));
-            }
-            BuildingMode::PlaceManaForge => {
-                builder.spawn((
-                    Text::new("Click the map to place a forge. Press <space> to cancel placement."),
-                    TextFont::from_font_size(12.0),
-                ));
-            }
-            BuildingMode::PlaceMinotaur => {
-                builder.spawn((
-                    Text::new(
-                        "Place a minotaur close to a Mana Forge. Press <space> to cancel placement.",
-                    ),
-                    TextFont::from_font_size(12.0),
-                ));
-            }
-        });
 }
 
 fn cancel_cursor_mode(
@@ -333,10 +407,10 @@ fn cancel_cursor_mode(
 #[reflect(Component)]
 pub struct CursorModeItem;
 
-#[cfg_attr(target_os = "macos", hot)]
 fn handle_build_mode_change(
     mut commands: Commands,
     mode: Res<BuildingMode>,
+    mut hint: ResMut<BuildTextHint>,
     previous_items: Query<Entity, With<CursorModeItem>>,
 ) {
     // despawn previous entities
@@ -345,7 +419,10 @@ fn handle_build_mode_change(
     }
 
     match *mode {
-        BuildingMode::None | BuildingMode::Lightning | BuildingMode::PlaceManaForge => {}
+        BuildingMode::None => {
+            hint.clear();
+        }
+        BuildingMode::Lightning | BuildingMode::PlaceManaForge => {}
         BuildingMode::PlaceMinotaur => {
             commands.spawn((
                 ParentManaForge(None),
@@ -357,8 +434,4 @@ fn handle_build_mode_change(
             ));
         }
     }
-
-    commands.run_system_cached(draw_building_bar);
-
-    // TODO spawn cursor/buldling placement items
 }
