@@ -310,8 +310,12 @@ impl GameMap {
         })
     }
 
-    /// Updates the map
+    /// Updates the map, spreading fire etc
     pub fn update(&mut self, global_wind: Vec2) {
+        const BURN_DECAY_RATE: f64 = 0.3;
+        const FIRE_SPREAD_CHANCE: f64 = 0.2;
+        const MOISTURE_DECAY_RATE: f32 = 0.01;
+
         let mut rng = rand::rng();
 
         for y in 0..self.size_y {
@@ -320,7 +324,7 @@ impl GameMap {
 
                 match self_terrain {
                     TerrainType::Fire => {
-                        if rng.random_bool(0.4) {
+                        if rng.random_bool(BURN_DECAY_RATE) {
                             let new_fuel_load = self.data[y][x].fuel_load.saturating_sub(1);
                             self.data[y][x].fuel_load = new_fuel_load;
 
@@ -340,30 +344,37 @@ impl GameMap {
                             let neighbour = self.data[n.y as usize][n.x as usize].terrain;
 
                             // each neighbouring fire has a chance to set this on fire
-                            if rng.random_bool(0.18) && matches!(neighbour, TerrainType::Fire) {
-                                let base_probability = self.data[y][x].terrain.burn_rate();
+                            if matches!(neighbour, TerrainType::Fire) {
+                                // reduce moisture of `self` for each neighouring fire cell
+                                self.data[y][x].moisture =
+                                    (self.data[y][x].moisture - MOISTURE_DECAY_RATE).max(0.0);
 
-                                let wind_angle = (self.data[y][x].wind + global_wind)
-                                    .angle_to(NEIGHBOUR_VECTOR[idx]);
-                                let wind_strength = self.data[y][x].wind.length();
-                                let wind_factor =
-                                    (wind_strength * 0.131 * (wind_angle.cos() - 1.0))
-                                        * (0.045 * wind_strength).exp();
+                                // on some percentage, spread the fire
+                                if rng.random_bool(FIRE_SPREAD_CHANCE) {
+                                    let base_probability = self.data[y][x].terrain.burn_rate();
 
-                                let moisture_factor = 1. - self.data[y][x].moisture;
+                                    let wind_angle = (self.data[y][x].wind + global_wind)
+                                        .angle_to(NEIGHBOUR_VECTOR[idx]);
+                                    let wind_strength = self.data[y][x].wind.length();
+                                    let wind_factor =
+                                        (wind_strength * 0.131 * (wind_angle.cos() - 1.0))
+                                            * (0.045 * wind_strength).exp();
 
-                                let burn_chance = (base_probability
-                                    * (1. + moisture_factor)
-                                    * (1. + wind_factor))
-                                    .clamp(0.0, 1.0)
-                                    as f64;
+                                    let moisture_factor = 1. - self.data[y][x].moisture;
 
-                                // check if we "roll" less than burn_chance, modified by a random
-                                // amount to create some noise in the burning
-                                let rng_factor = rng.random::<f64>();
-                                if rng.random_bool(burn_chance * rng_factor) {
-                                    self.data[y][x].terrain = TerrainType::Fire;
-                                    self.data[y][x].dirty = true;
+                                    let burn_chance =
+                                        (base_probability * moisture_factor * (1. + wind_factor))
+                                            .clamp(0.0, 1.0)
+                                            as f64;
+
+                                    // check if we "roll" less than burn_chance, modified by a random
+                                    // amount to create some noise in the burning
+                                    let rng_factor = rng.random::<f64>();
+                                    if rng.random_bool(burn_chance * rng_factor) {
+                                        self.data[y][x].terrain = TerrainType::Fire;
+                                        self.data[y][x].dirty = true;
+                                        break; // no need to set it on fire any other way, lets take a break
+                                    }
                                 }
                             }
                         }
