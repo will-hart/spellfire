@@ -50,11 +50,12 @@ fn handle_camera_zoom_gestures(
     wheel_gestures: Res<MouseWheelGestures>,
     mut camera: Single<&mut Projection, With<MainCamera>>,
 ) {
-    if let GestureType::Pinch { unscaled_delta } = wheel_gestures.current()
-        && let Projection::Orthographic(ref mut proj) = **camera
-    {
-        proj.scale = (proj.scale + unscaled_delta * proj.scale)
-            .clamp(wheel_gestures.min_scale, wheel_gestures.max_scale);
+    #[expect(clippy::collapsible_if, reason = "don't always want to use nightly")]
+    if let GestureType::Pinch { unscaled_delta } = wheel_gestures.current() {
+        if let Projection::Orthographic(ref mut proj) = **camera {
+            proj.scale = (proj.scale + unscaled_delta * proj.scale)
+                .clamp(wheel_gestures.min_scale, wheel_gestures.max_scale);
+        }
     }
 }
 
