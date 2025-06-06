@@ -55,11 +55,16 @@ fn spawn_mana_forge(
         warn!("Not enough resources to place mana forge!");
         return;
     }
-    resources.mana -= 50;
-
     let coords = map.tile_coords(config.0);
+    if !map.is_valid_coords(coords) {
+        warn!("Invalid coordinates for manaforge, skipping placement");
+        return;
+    }
+
     let clamped_world_coords = map.world_coords(coords);
+
     info!("Spawning mana forge at {coords}");
+    resources.mana -= 50;
 
     commands.spawn((
         BuildingLocation(coords),

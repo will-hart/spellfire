@@ -247,6 +247,19 @@ impl GameMap {
         }
     }
 
+    /// Returns whether the given coordinates are "valid" (i.e. on the map)
+    pub fn is_valid_coords(&self, coords: IVec2) -> bool {
+        if coords.x < 0
+            || coords.x as usize >= self.size_x
+            || coords.y < 0
+            || coords.y as usize >= self.size_y
+        {
+            return false;
+        }
+
+        true
+    }
+
     /// Gets an immutable ref to the cell at the given location, if there is one
     pub fn get(&self, loc: IVec2) -> Option<&TerrainCellState> {
         if loc.x < 0 || loc.x >= self.size_x as i32 || loc.y < 0 || loc.y >= self.size_y as i32 {

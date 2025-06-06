@@ -64,10 +64,15 @@ fn spawn_minotaur(
         return;
     };
 
+    let coords = map.tile_coords(config.0);
+    if !map.is_valid_coords(coords) {
+        warn!("Invalid map coordinates, aborting minotaur placement");
+        return;
+    }
+
     commands.entity(parent_forge_entity).despawn();
     resources.mana -= 30;
 
-    let coords = map.tile_coords(config.0);
     let world_coords = map.world_coords(coords);
     info!("Spawning minotaur at {coords}");
 
@@ -149,9 +154,18 @@ impl Minotaur {
             })
             .filter_map(
                 // limit to trees and grass
-                |coord| match map.data[coord.y as usize][coord.x as usize].terrain {
-                    TerrainType::Grassland | TerrainType::Tree => Some(coord),
-                    _ => None,
+                |coord| {
+                    // check upper bounds
+                    let x = coord.x as usize;
+                    let y = coord.y as usize;
+                    if x >= map.size_x || y >= map.size_y {
+                        return None;
+                    }
+
+                    match map.data[y][x].terrain {
+                        TerrainType::Grassland | TerrainType::Tree => Some(coord),
+                        _ => None,
+                    }
                 },
             )
             .collect::<Vec<_>>();

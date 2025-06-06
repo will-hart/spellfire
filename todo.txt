@@ -41,10 +41,8 @@ Polish
 
 Bugs
 
-
-- [ ] can place buildings off the map
-- [ ] sometimes cancelling building placement while placing (with manalines) might cause a problem?
-- [ ] Minotaur right on the edge of the map
+- [x] can place buildings off the map
+- [x] Minotaur right on the edge of the map
 
 thread 'Compute Task Pool (1)' panicked at src\screens\gameplay\building\minotaur.rs:153:39:
 index out of bounds: the len is 256 but the index is 256
