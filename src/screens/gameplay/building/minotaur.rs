@@ -1,4 +1,4 @@
-//! Logic + code for placing mana forge buildings
+//! Logic + code for placing minotaur hutch buildings
 
 use bevy::{prelude::*, sprite::Anchor};
 #[cfg(target_os = "macos")]
@@ -7,7 +7,6 @@ use rand::Rng;
 
 use crate::{
     Pause,
-    input::MousePosition,
     screens::{
         PlayerResources, Screen,
         gameplay::{
@@ -26,7 +25,7 @@ pub(super) fn plugin(app: &mut App) {
 
     app.add_systems(
         Update,
-        (produce_from_minotaur, while_placing_minotaur).distributive_run_if(
+        produce_from_minotaur.run_if(
             in_state(Pause(false))
                 .and(in_state(Screen::Gameplay))
                 .and(resource_exists::<PlayerResources>),
@@ -59,7 +58,7 @@ fn spawn_minotaur(
     }
 
     let (parent_forge_entity, parent_forge) = *parent_forge;
-    let Some(parent_forge) = parent_forge.0 else {
+    let Some(parent_forge) = parent_forge.entity else {
         warn!("No parent mana forge inside tracking, skipping minotaur placement");
         return;
     };
@@ -138,32 +137,15 @@ impl Minotaur {
     /// Move the minotaur to a random new position
     fn move_to_grass(&mut self, map: &mut GameMap, center: IVec2) {
         // first find all the available cells that are grass or trees
-        let range = self.range;
-
-        let coords = ((center.y - range).max(0)..=(center.y + range).max(0))
-            .flat_map(|y| {
-                ((center.x - range).max(0)..=(center.x + range).max(0)).filter_map(move |x| {
-                    let v = IVec2::new(x, y);
-
-                    if v.distance_squared(center) > range * range {
-                        None
-                    } else {
-                        Some(v)
-                    }
-                })
-            })
+        let coords = map
+            .cells_within_range(center, self.range)
             .filter(
                 // limit to trees and grass
                 |coord| {
-                    // check upper bounds
-                    let x = coord.x as usize;
-                    let y = coord.y as usize;
-                    if x >= map.size_x || y >= map.size_y {
-                        return false;
-                    }
-
                     matches!(
-                        map.data[y][x].terrain,
+                        // no bounds checjk requried as cells_within_range
+                        // only returns valid cvells
+                        map.data[coord.y as usize][coord.x as usize].terrain,
                         TerrainType::Grassland | TerrainType::Tree
                     )
                 },
@@ -180,52 +162,6 @@ impl Minotaur {
         let idx = rng.gen_range(0..coords.len());
         self.location = coords[idx];
     }
-}
-
-#[cfg_attr(target_os = "macos", hot)]
-fn while_placing_minotaur(
-    mouse: Res<MousePosition>,
-    mode: Res<BuildingMode>,
-    map: Res<GameMap>,
-    mut parent_forge: Single<(&mut ParentManaForge, &mut ManaLine)>,
-    forges: Query<(Entity, &Transform), With<ManaForge>>,
-) {
-    const MAX_DISTANCE_SQR: f32 = 50.0 * 50.0;
-
-    // unlikely but exit early anyway
-    if !matches!(*mode, BuildingMode::PlaceMinotaur) {
-        return;
-    }
-
-    let (forge, parent_mana_line) = &mut *parent_forge;
-
-    // clear previous closest
-    let mouse_pos = mouse.world_pos;
-    let mut distances = forges
-        .iter()
-        .filter_map(|(e, tx)| {
-            let distance_to_forge = mouse_pos.distance_squared(tx.translation.truncate());
-            if distance_to_forge > MAX_DISTANCE_SQR * map.sprite_size {
-                return None;
-            }
-
-            Some((e, distance_to_forge, tx.translation.truncate()))
-        })
-        .collect::<Vec<_>>();
-
-    distances.sort_by(|(_, a, _), (_, b, _)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-
-    let Some((closest_forge, tx)) = distances.first().map(|(e, _, tx)| (e, tx)) else {
-        forge.0 = None;
-        parent_mana_line.disabled = true;
-
-        return;
-    };
-
-    forge.0 = Some(*closest_forge);
-    parent_mana_line.from = tx.extend(0.05);
-    parent_mana_line.to = mouse_pos.extend(0.05);
-    parent_mana_line.disabled = false;
 }
 
 #[cfg_attr(target_os = "macos", hot)]

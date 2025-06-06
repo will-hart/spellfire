@@ -1,6 +1,7 @@
 Basic gameplay
 
 - [ ] child buildings consume mana each time they "produce"
+- [x] add "lumber" resource type
 - [x] seed mapgen and pick some good seeds
 - [x] hover UI for buildings with info
 - [x] show lines between mana forge and child buidings
@@ -9,6 +10,7 @@ Basic gameplay
 Building placement
 
 - [ ] disable invalid buttons (i.e. not enough resources)
+- [x] add lumber mill building type
 - [x] child buildings get hurt by fire
 - [x] make sure building sprites are centered on grid coords
 - [x] display empty mana line while placing units (to closest parent)
@@ -35,7 +37,9 @@ Juice
 
 Polish
 
-- [ ] menu rejig - show a fire in the background, buttons down the bottom
+- [ ] menu rejig
+  - [ ] show a fire in the background or a logo
+  - [x] buttons down the bottom
 - [ ] music
 - [ ] redraw map without respawning sprites (see map::redraw_map system) - possibly use a texture?
 - [ ] scenarios - specify seed, city location, fire locations + time, time limit?

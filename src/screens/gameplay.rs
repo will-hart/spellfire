@@ -17,7 +17,8 @@ use crate::{
     screens::{
         Screen,
         gameplay::building::{
-            BuildingAssets, ManaLine, ParentManaForge, SpawnManaForge, SpawnMinotaur,
+            BuildingAssets, ManaLine, ParentManaForge, ResourceAssets, SpawnLumberMill,
+            SpawnManaForge, SpawnMinotaur,
         },
     },
     theme::node_builder::NodeBuilder,
@@ -29,6 +30,7 @@ pub use building::BuildingType;
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<EnergyTextMarker>();
+    app.register_type::<LumberTextMarker>();
     app.register_type::<BuildingMode>();
     app.register_type::<CursorModeItem>();
     app.register_type::<PlayerResources>();
@@ -80,7 +82,7 @@ pub(super) fn plugin(app: &mut App) {
             update_toolbar.run_if(resource_exists::<PlayerResources>),
             update_build_hint_ui,
             handle_mouse_click_input.run_if(input_just_pressed(MouseButton::Left)),
-            handle_build_mode_change
+            handle_build_mode_changing
                 .run_if(resource_changed::<BuildingMode>)
                 .after(cancel_cursor_mode),
         )
@@ -98,11 +100,16 @@ pub struct EndlessMode;
 pub struct PlayerResources {
     /// The amount of mana in the bank
     pub mana: i32,
+    /// The amount of lumber in the bank
+    pub lumber: i32,
 }
 
 impl Default for PlayerResources {
     fn default() -> Self {
-        Self { mana: 50 }
+        Self {
+            mana: 0,
+            lumber: 50,
+        }
     }
 }
 
@@ -112,6 +119,7 @@ pub enum BuildingMode {
     #[default]
     None,
     Lightning,
+    PlaceLumberMill,
     PlaceManaForge,
     PlaceMinotaur,
 }
@@ -132,6 +140,9 @@ fn handle_mouse_click_input(
 ) {
     match *mode {
         BuildingMode::None => {}
+        BuildingMode::PlaceLumberMill => {
+            commands.queue(SpawnLumberMill(mouse.world_pos));
+        }
         BuildingMode::Lightning => {
             if let Some(map) = maybe_map {
                 let coords = map.tile_coords(mouse.world_pos);
@@ -194,6 +205,10 @@ fn close_menu(mut next_menu: ResMut<NextState<Menu>>) {
 #[derive(Component, Reflect, Debug, Clone, Copy)]
 #[reflect(Component)]
 pub struct EnergyTextMarker;
+
+#[derive(Component, Reflect, Debug, Clone, Copy)]
+#[reflect(Component)]
+pub struct LumberTextMarker;
 
 #[derive(Component, Reflect, Debug, Clone, Copy)]
 #[reflect(Component)]
@@ -267,7 +282,11 @@ fn toolbar_button(
         );
 }
 
-fn spawn_toolbar(mut commands: Commands, building_assets: Res<BuildingAssets>) {
+fn spawn_toolbar(
+    mut commands: Commands,
+    resource_assets: Res<ResourceAssets>,
+    building_assets: Res<BuildingAssets>,
+) {
     commands
         .spawn((
             toolbar_node()
@@ -283,8 +302,40 @@ fn spawn_toolbar(mut commands: Commands, building_assets: Res<BuildingAssets>) {
                 NodeBuilder::new().height(Val::Px(35.0)).center_content().build(),
                 children![
                     (
+                        Node{
+                          margin: UiRect::right(Val::Px(5.0)),
+                          ..default()  
+                        },
+                        ImageNode {
+                            image: resource_assets.resource_icons.clone(),
+                            rect: Some(Rect::from_corners(Vec2::ZERO, Vec2::splat(16.0))),
+                            ..default()
+                        }
+                    ),
+                    (
                         EnergyTextMarker,
-                        Text::new("ENERGY: 10"),
+                        NodeBuilder::new().background(SLATE_800).center_content().padding(UiRect::all(Val::Px(3.0))).build(),
+                        Text::new("10"),
+                        TextFont {
+                            font_size: 12.0,
+                            ..default()
+                        }
+                    ),
+                    (
+                        Node {
+                            margin: UiRect::right(Val::Px(5.0)),
+                            ..default()
+                        },
+                        ImageNode {
+                            image: resource_assets.resource_icons.clone(),
+                            rect: Some(Rect::from_corners(Vec2::new(16.0, 0.0), Vec2::new(32.0, 16.0))),
+                            ..default()
+                        },
+                    ),
+                    (
+                        LumberTextMarker,
+                        NodeBuilder::new().background(SLATE_800).center_content().padding(UiRect::all(Val::Px(3.0))).build(),
+                        Text::new("10"),
                         TextFont {
                             font_size: 12.0,
                             ..default()
@@ -322,9 +373,16 @@ fn spawn_toolbar(mut commands: Commands, building_assets: Res<BuildingAssets>) {
                     );
 
                     toolbar_button(toolbar,
+                         BuildingMode::PlaceLumberMill,
+                         building_assets.lumber_mill.clone(),
+                          "LUMBER MILL. Cost: 30 Lumber. Produces Lumber from nearby trees every (0.5 sec).",
+                           "Click the map to place a lumber mill. Press <space> to cancel placement."
+                    );
+
+                    toolbar_button(toolbar,
                          BuildingMode::PlaceManaForge,
                          building_assets.mana_forge.clone(),
-                          "MANA FORGE. Cost: 50 Mana. Produces Mana (3/sec), powers other buildings.",
+                          "MANA FORGE. Cost: 50 Lumber. Produces Mana (3/sec), powers other buildings.",
                            "Click the map to place a forge. Press <space> to cancel placement."
                     );
 
@@ -359,8 +417,30 @@ fn update_toolbar(
     wind: Res<WindDirection>,
     mouse: Res<MousePosition>,
     map: Res<GameMap>,
-    mut energy_text: Single<&mut Text, (Without<WindTextMarker>, With<EnergyTextMarker>)>,
-    mut wind_text: Single<&mut Text, (Without<EnergyTextMarker>, With<WindTextMarker>)>,
+    mut energy_text: Single<
+        &mut Text,
+        (
+            Without<LumberTextMarker>,
+            Without<WindTextMarker>,
+            With<EnergyTextMarker>,
+        ),
+    >,
+    mut wind_text: Single<
+        &mut Text,
+        (
+            Without<LumberTextMarker>,
+            Without<EnergyTextMarker>,
+            With<WindTextMarker>,
+        ),
+    >,
+    mut lumber_text: Single<
+        &mut Text,
+        (
+            With<LumberTextMarker>,
+            Without<EnergyTextMarker>,
+            Without<WindTextMarker>,
+        ),
+    >,
 ) {
     let cell_state = if let Some(cell) = map.tile_at_world_pos(mouse.world_pos) {
         format!("{}", *cell)
@@ -368,7 +448,8 @@ fn update_toolbar(
         String::new()
     };
 
-    energy_text.0 = format!("MANA: {}", player_resource.mana);
+    energy_text.0 = format!("{}", player_resource.mana);
+    lumber_text.0 = format!("{}", player_resource.lumber);
     wind_text.0 = format!(
         " | WIND: From {} / {} | {cell_state}",
         match CompassOctant::from(Dir2::new(wind.0).expect("to dir")) {
@@ -417,7 +498,7 @@ fn cancel_cursor_mode(
 #[reflect(Component)]
 pub struct CursorModeItem;
 
-fn handle_build_mode_change(
+fn handle_build_mode_changing(
     mut commands: Commands,
     mode: Res<BuildingMode>,
     mut hint: ResMut<BuildTextHint>,
@@ -432,11 +513,11 @@ fn handle_build_mode_change(
         BuildingMode::None => {
             hint.clear();
         }
-        BuildingMode::Lightning | BuildingMode::PlaceManaForge => {}
+        BuildingMode::Lightning | BuildingMode::PlaceManaForge | BuildingMode::PlaceLumberMill => {}
         BuildingMode::PlaceMinotaur => {
             info!("Spawning building mode items for minotaur placement");
             commands.spawn((
-                ParentManaForge(None),
+                ParentManaForge::new(BuildingType::Minotaur),
                 CursorModeItem,
                 ManaLine {
                     from: Vec3::ZERO,

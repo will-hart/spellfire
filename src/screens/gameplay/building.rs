@@ -12,19 +12,26 @@ use rand::Rng;
 use crate::{
     Pause,
     asset_tracking::LoadResource,
-    screens::{PlayerResources, Screen},
+    input::MousePosition,
+    screens::{
+        PlayerResources, Screen,
+        gameplay::{BuildingMode, building::mana_forge::ManaForge},
+    },
     wildfire::{GameMap, OnLightningStrike},
 };
 
+mod lumber_mill;
 mod mana_forge;
 mod mana_line;
 mod minotaur;
 
+pub use lumber_mill::SpawnLumberMill;
 pub use mana_forge::SpawnManaForge;
 pub use minotaur::SpawnMinotaur;
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<BuildingAssets>();
+    app.register_type::<ResourceAssets>();
     app.register_type::<BuildingType>();
     app.register_type::<BuildingLocation>();
     app.register_type::<ManaLine>();
@@ -32,16 +39,29 @@ pub(super) fn plugin(app: &mut App) {
     app.register_type::<ParentManaForge>();
 
     app.load_resource::<BuildingAssets>();
+    app.load_resource::<ResourceAssets>();
 
-    app.add_plugins((mana_forge::plugin, mana_line::plugin, minotaur::plugin));
+    app.add_plugins((
+        lumber_mill::plugin,
+        mana_forge::plugin,
+        mana_line::plugin,
+        minotaur::plugin,
+    ));
 
     app.add_systems(
         Update,
-        burn_buildings.run_if(
-            on_timer(Duration::from_millis(100))
-                .and(in_state(Pause(false)))
-                .and(in_state(Screen::Gameplay))
-                .and(resource_exists::<PlayerResources>),
+        (
+            burn_buildings.run_if(
+                on_timer(Duration::from_millis(100))
+                    .and(in_state(Pause(false)))
+                    .and(in_state(Screen::Gameplay))
+                    .and(resource_exists::<PlayerResources>),
+            ),
+            track_building_parent_while_placing.run_if(
+                in_state(Pause(false))
+                    .and(in_state(Screen::Gameplay))
+                    .and(resource_exists::<PlayerResources>),
+            ),
         ),
     );
 }
@@ -51,6 +71,30 @@ pub(super) fn plugin(app: &mut App) {
 pub enum BuildingType {
     ManaForge,
     Minotaur,
+    LumberMill,
+}
+
+#[derive(Resource, Asset, Clone, Reflect)]
+#[reflect(Resource)]
+pub struct ResourceAssets {
+    #[dependency]
+    pub resource_icons: Handle<Image>,
+}
+
+impl FromWorld for ResourceAssets {
+    fn from_world(world: &mut World) -> Self {
+        let assets = world.resource::<AssetServer>();
+
+        Self {
+            resource_icons: assets.load_with_settings(
+                "images/resource_icons.png",
+                |settings: &mut ImageLoaderSettings| {
+                    // Use `nearest` image sampling to preserve pixel art style.
+                    settings.sampler = ImageSampler::nearest();
+                },
+            ),
+        }
+    }
 }
 
 #[derive(Resource, Asset, Clone, Reflect)]
@@ -62,6 +106,8 @@ pub struct BuildingAssets {
     pub minotaur: Handle<Image>,
     #[dependency]
     pub lightning: Handle<Image>,
+    #[dependency]
+    pub lumber_mill: Handle<Image>,
 }
 
 impl FromWorld for BuildingAssets {
@@ -90,6 +136,13 @@ impl FromWorld for BuildingAssets {
                     settings.sampler = ImageSampler::nearest();
                 },
             ),
+            lumber_mill: assets.load_with_settings(
+                "images/lumbermill.png",
+                |settings: &mut ImageLoaderSettings| {
+                    // Use `nearest` image sampling to preserve pixel art style.
+                    settings.sampler = ImageSampler::nearest();
+                },
+            ),
         }
     }
 }
@@ -98,9 +151,21 @@ impl FromWorld for BuildingAssets {
 #[reflect(Component)]
 pub struct BuildingLocation(pub IVec2);
 
-#[derive(Component, Reflect, Debug, Copy, Clone, Default)]
+#[derive(Component, Reflect, Debug, Copy, Clone)]
 #[reflect(Component)]
-pub struct ParentManaForge(pub Option<Entity>);
+pub struct ParentManaForge {
+    pub entity: Option<Entity>,
+    pub building_type: BuildingType,
+}
+
+impl ParentManaForge {
+    pub fn new(building_type: BuildingType) -> Self {
+        Self {
+            entity: None,
+            building_type,
+        }
+    }
+}
 
 #[derive(Component, Reflect, Debug, Copy, Clone)]
 #[reflect(Component)]
@@ -149,4 +214,49 @@ fn burn_buildings(
             }
         }
     }
+}
+
+fn track_building_parent_while_placing(
+    mouse: Res<MousePosition>,
+    mode: Res<BuildingMode>,
+    map: Res<GameMap>,
+    mut parent_forge: Single<(&mut ParentManaForge, &mut ManaLine)>,
+    forges: Query<(Entity, &Transform), With<ManaForge>>,
+) {
+    const MAX_DISTANCE_SQR: f32 = 50.0 * 50.0;
+
+    // unlikely but exit early anyway
+    if !matches!(*mode, BuildingMode::PlaceMinotaur) {
+        return;
+    }
+
+    let (forge, parent_mana_line) = &mut *parent_forge;
+
+    // clear previous closest
+    let mouse_pos = mouse.world_pos;
+    let mut distances = forges
+        .iter()
+        .filter_map(|(e, tx)| {
+            let distance_to_forge = mouse_pos.distance_squared(tx.translation.truncate());
+            if distance_to_forge > MAX_DISTANCE_SQR * map.sprite_size {
+                return None;
+            }
+
+            Some((e, distance_to_forge, tx.translation.truncate()))
+        })
+        .collect::<Vec<_>>();
+
+    distances.sort_by(|(_, a, _), (_, b, _)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+
+    let Some((closest_forge, tx)) = distances.first().map(|(e, _, tx)| (e, tx)) else {
+        forge.entity = None;
+        parent_mana_line.disabled = true;
+
+        return;
+    };
+
+    forge.entity = Some(*closest_forge);
+    parent_mana_line.from = tx.extend(0.05);
+    parent_mana_line.to = mouse_pos.extend(0.05);
+    parent_mana_line.disabled = false;
 }
