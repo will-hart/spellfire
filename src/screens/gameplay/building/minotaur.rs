@@ -1,8 +1,6 @@
 //! Logic + code for placing minotaur hutch buildings
 
 use bevy::{prelude::*, sprite::Anchor};
-#[cfg(target_os = "macos")]
-use bevy_simple_subsecond_system::hot;
 use rand::Rng;
 
 use crate::{
@@ -168,7 +166,7 @@ impl Minotaur {
     }
 }
 
-#[cfg_attr(target_os = "macos", hot)]
+// #[cfg_attr(target_os = "macos", hot)]
 fn produce_from_minotaur(
     time: Res<Time>,
     mut map: ResMut<GameMap>,

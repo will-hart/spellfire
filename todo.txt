@@ -1,6 +1,6 @@
 Basic gameplay
 
-- [ ] child buildings consume mana each time they "produce"
+- [x] child buildings consume mana each time they "produce"
 - [x] add "lumber" resource type
 - [x] seed mapgen and pick some good seeds
 - [x] hover UI for buildings with info
@@ -44,6 +44,7 @@ Polish
 - [ ] redraw map without respawning sprites (see map::redraw_map system) - possibly use a texture?
 - [ ] scenarios - specify seed, city location, fire locations + time, time limit?
 - [ ] lumber mills can also plant trees in grass
+- [ ] more building types
 
 Bugs
 
