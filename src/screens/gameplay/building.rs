@@ -38,9 +38,11 @@ pub enum BuildingType {
 #[reflect(Resource)]
 pub struct BuildingAssets {
     #[dependency]
-    mana_forge: Handle<Image>,
+    pub mana_forge: Handle<Image>,
     #[dependency]
-    minotaur: Handle<Image>,
+    pub minotaur: Handle<Image>,
+    #[dependency]
+    pub lightning: Handle<Image>,
 }
 
 impl FromWorld for BuildingAssets {
@@ -57,6 +59,13 @@ impl FromWorld for BuildingAssets {
             ),
             minotaur: assets.load_with_settings(
                 "images/minotaur.png",
+                |settings: &mut ImageLoaderSettings| {
+                    // Use `nearest` image sampling to preserve pixel art style.
+                    settings.sampler = ImageSampler::nearest();
+                },
+            ),
+            lightning: assets.load_with_settings(
+                "images/lightning.png",
                 |settings: &mut ImageLoaderSettings| {
                     // Use `nearest` image sampling to preserve pixel art style.
                     settings.sampler = ImageSampler::nearest();
