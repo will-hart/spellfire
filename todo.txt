@@ -36,7 +36,7 @@ Polish
 
 - [ ] menu rejig - show a fire in the background, buttons down the bottom
 - [ ] music
-- [ ] redraw map without respawning sprites (see map::redraw_map system)
+- [ ] redraw map without respawning sprites (see map::redraw_map system) - possibly use a texture?
 - [ ] scenarios - specify seed, city location, fire locations + time, time limit?
 
 Bugs

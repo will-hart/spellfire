@@ -29,15 +29,15 @@ fn spawn_main_menu(mut commands: Commands) {
         StateScoped(Menu::Main),
         #[cfg(not(target_family = "wasm"))]
         children![
-            widget::disabled_button("Story Mode"),
-            widget::button_menu("Endless Mode", enter_loading_or_gameplay_screen),
+            widget::button_menu("Story Mode", enter_loading_or_gameplay_screen),
+            widget::button_menu("Endless Mode", enter_loading_or_gameplay_screen_endless),
             widget::button_menu("Settings", open_settings_menu),
             widget::button_menu("Credits", open_credits_menu),
             widget::button_menu("Exit", exit_app),
         ],
         #[cfg(target_family = "wasm")]
         children![
-            widget::disabled_button("Story Mode"),
+            widget::button_menu("Story Mode", enter_loading_or_gameplay_screen),
             widget::button_menu("Endless Mode", enter_loading_or_gameplay_screen),
             widget::button_menu("Settings", open_settings_menu),
             widget::button_menu("Credits", open_credits_menu),
@@ -46,6 +46,18 @@ fn spawn_main_menu(mut commands: Commands) {
 }
 
 fn enter_loading_or_gameplay_screen(
+    _: Trigger<Pointer<Click>>,
+    resource_handles: Res<ResourceHandles>,
+    mut next_screen: ResMut<NextState<Screen>>,
+) {
+    if resource_handles.is_all_done() {
+        next_screen.set(Screen::Gameplay);
+    } else {
+        next_screen.set(Screen::Loading);
+    }
+}
+
+fn enter_loading_or_gameplay_screen_endless(
     _: Trigger<Pointer<Click>>,
     mut commands: Commands,
     resource_handles: Res<ResourceHandles>,

@@ -88,7 +88,7 @@ fn spawn_mana_forge(
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
 pub struct ManaForge {
-    pub mana_per_second: u32,
+    pub mana_per_second: i32,
     time_since_last_tick: f32,
 }
 

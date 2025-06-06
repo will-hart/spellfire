@@ -1,10 +1,11 @@
 //! Spawn the main level and trigger a map to be spawned
 
 use bevy::prelude::*;
+use rand::Rng;
 
 use crate::{
     asset_tracking::LoadResource,
-    screens::{PlayerResources, Screen},
+    screens::{EndlessMode, PlayerResources, Screen},
     wildfire::{GOOD_SEEDS, GameMap, OnSpawnMap, SpawnedMap},
 };
 
@@ -32,9 +33,16 @@ impl FromWorld for LevelAssets {
 }
 
 /// A system that spawns the main level.
-pub fn spawn_level(mut commands: Commands) {
-    commands.trigger(OnSpawnMap::new(GOOD_SEEDS[0]));
+pub fn spawn_level(mut commands: Commands, endless_mode: Option<Res<EndlessMode>>) {
+    let seed = if endless_mode.is_some() {
+        info!("Spawning random level in endless mode");
+        rand::rng().random()
+    } else {
+        info!("Spawning first level");
+        GOOD_SEEDS[0]
+    };
 
+    commands.trigger(OnSpawnMap::new(seed));
     commands.init_resource::<PlayerResources>();
 }
 

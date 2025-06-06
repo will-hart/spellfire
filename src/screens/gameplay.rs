@@ -92,7 +92,8 @@ pub struct EndlessMode;
 #[derive(Resource, Reflect, Debug, Clone)]
 #[reflect(Resource)]
 pub struct PlayerResources {
-    pub mana: u32,
+    /// The amount of mana in the bank
+    pub mana: i32,
 }
 
 impl Default for PlayerResources {
