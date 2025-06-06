@@ -38,7 +38,7 @@ pub(super) fn plugin(app: &mut App) {
 pub struct SpawnMinotaur(pub Vec2);
 
 impl Command for SpawnMinotaur {
-    fn apply(self, world: &mut World) -> () {
+    fn apply(self, world: &mut World) {
         let _ = world.run_system_cached_with(spawn_minotaur, self);
     }
 }
@@ -152,20 +152,20 @@ impl Minotaur {
                     }
                 })
             })
-            .filter_map(
+            .filter(
                 // limit to trees and grass
                 |coord| {
                     // check upper bounds
                     let x = coord.x as usize;
                     let y = coord.y as usize;
                     if x >= map.size_x || y >= map.size_y {
-                        return None;
+                        return false;
                     }
 
-                    match map.data[y][x].terrain {
-                        TerrainType::Grassland | TerrainType::Tree => Some(coord),
-                        _ => None,
-                    }
+                    matches!(
+                        map.data[y][x].terrain,
+                        TerrainType::Grassland | TerrainType::Tree
+                    )
                 },
             )
             .collect::<Vec<_>>();

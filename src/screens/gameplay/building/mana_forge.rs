@@ -38,7 +38,7 @@ pub(super) fn plugin(app: &mut App) {
 pub struct SpawnManaForge(pub Vec2);
 
 impl Command for SpawnManaForge {
-    fn apply(self, world: &mut World) -> () {
+    fn apply(self, world: &mut World) {
         let _ = world.run_system_cached_with(spawn_mana_forge, self);
     }
 }

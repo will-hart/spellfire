@@ -213,15 +213,15 @@ impl GameMap {
         let noise_map = NoiseMap::new(seed);
         let mut data = vec![vec![TerrainCellState::default(); size_x]; size_y];
 
-        for y in 0..size_y {
-            for x in 0..size_x {
+        for (y, row) in data.iter_mut().enumerate().take(size_y) {
+            for (x, cell) in row.iter_mut().enumerate().take(size_y) {
                 let (terrain, fuel) = noise_map.sample(x, y);
-                data[y][x].terrain = terrain;
-                data[y][x].fuel_load = fuel;
+                cell.terrain = terrain;
+                cell.fuel_load = fuel;
 
                 match terrain {
                     TerrainType::Grassland | TerrainType::Tree => {
-                        data[y][x].moisture = noise_map.moisture(x as f32, y as f32);
+                        cell.moisture = noise_map.moisture(x as f32, y as f32);
                     }
                     _ => {}
                 }
@@ -239,10 +239,7 @@ impl GameMap {
     /// Checks whether the cell at the given tile coords is on fire
     pub fn is_on_fire(&self, loc: IVec2) -> bool {
         if let Some(cell) = self.get(loc) {
-            match cell.terrain {
-                TerrainType::Fire => true,
-                _ => false,
-            }
+            matches!(cell.terrain, TerrainType::Fire)
         } else {
             false
         }
@@ -321,8 +318,6 @@ impl GameMap {
     /// [NEIGHBOUR_COORDINATES]. If the cell coordinate of a neighbour is
     /// invalid (i.e. off the grid) then `None` will be returned.
     fn neighbours(&mut self, x: i32, y: i32) -> impl Iterator<Item = Option<IVec2>> {
-        let x = x;
-        let y = y;
         let sx = self.size_x as i32;
         let sy = self.size_y as i32;
 

@@ -44,7 +44,7 @@ impl OnSpawnMap {
         Self {
             size: UVec2::splat(256),
             sprite_size: 4.0,
-            seed: seed,
+            seed,
         }
     }
 }

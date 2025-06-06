@@ -1,14 +1,15 @@
 Basic gameplay
 
-- [ ] hover UI for buildings with info
 - [ ] child buildings consume mana each time they "produce"
 - [x] seed mapgen and pick some good seeds
+- [x] hover UI for buildings with info
 - [x] show lines between mana forge and child buidings
 - [x] chain react child buildings when mana forge is blown up
 
 Building placement
 
 - [ ] disable invalid buttons (i.e. not enough resources)
+- [ ] child buildingsget hurt by fire
 - [x] make sure building sprites are centered on grid coords
 - [x] display empty mana line while placing units (to closest parent)
 - [x] place buildings only when in range of a mana forge
@@ -21,7 +22,7 @@ Victory conditions
 
 Fire sim
 
-- [ ] slow it all down, using moisture but with more fuel
+- [x] slow it all down, using moisture but with more fuel
 
 Juice
 
