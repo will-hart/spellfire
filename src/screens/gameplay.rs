@@ -9,9 +9,6 @@ use bevy::{
     ui::Val::*,
 };
 
-#[cfg(target_os = "macos")]
-use bevy_simple_subsecond_system::prelude::*;
-
 use crate::{
     Pause,
     demo::level::spawn_level,
