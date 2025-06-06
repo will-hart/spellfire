@@ -44,8 +44,8 @@ fn spawn_mana_forge(
     buildings: Res<BuildingAssets>,
     map: Res<GameMap>,
 ) {
-    if resources.mana < 50 {
-        warn!("Not enough resources to place mana forge!");
+    if resources.lumber < 50 {
+        warn!("Not enough lumber to place mana forge!");
         return;
     }
     let coords = map.tile_coords(config.0);
@@ -57,7 +57,8 @@ fn spawn_mana_forge(
     let clamped_world_coords = map.world_coords(coords);
 
     info!("Spawning mana forge at {coords}");
-    resources.mana -= 50;
+    resources.lumber -= 50;
+    resources.mana_drain += 3;
 
     commands.spawn((
         BuildingLocation(coords),

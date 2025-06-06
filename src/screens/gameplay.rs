@@ -1,11 +1,14 @@
 //! The screen state for the main gameplay.
 
+use std::time::Duration;
+
 use bevy::{
     color::palettes::tailwind::{SLATE_700, SLATE_800},
     ecs::relationship::RelatedSpawnerCommands,
     input::common_conditions::input_just_pressed,
     math::CompassOctant,
     prelude::*,
+    time::common_conditions::on_timer,
     ui::Val::*,
 };
 
@@ -79,7 +82,8 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(
         Update,
         (
-            update_toolbar.run_if(resource_exists::<PlayerResources>),
+            update_toolbar
+                .run_if(resource_exists::<PlayerResources>.and(on_timer(Duration::from_secs(1)))),
             update_build_hint_ui,
             handle_mouse_click_input.run_if(input_just_pressed(MouseButton::Left)),
             handle_build_mode_changing
@@ -100,6 +104,8 @@ pub struct EndlessMode;
 pub struct PlayerResources {
     /// The amount of mana in the bank
     pub mana: i32,
+    /// The amount of mana being produced or drained per second
+    pub mana_drain: i32,
     /// The amount of lumber in the bank
     pub lumber: i32,
 }
@@ -108,6 +114,7 @@ impl Default for PlayerResources {
     fn default() -> Self {
         Self {
             mana: 0,
+            mana_drain: 0,
             lumber: 50,
         }
     }
@@ -304,7 +311,7 @@ fn spawn_toolbar(
                     (
                         Node{
                           margin: UiRect::right(Val::Px(5.0)),
-                          ..default()  
+                          ..default()
                         },
                         ImageNode {
                             image: resource_assets.resource_icons.clone(),
@@ -448,7 +455,10 @@ fn update_toolbar(
         String::new()
     };
 
-    energy_text.0 = format!("{}", player_resource.mana);
+    energy_text.0 = format!(
+        "{} ({:+})",
+        player_resource.mana, player_resource.mana_drain
+    );
     lumber_text.0 = format!("{}", player_resource.lumber);
     wind_text.0 = format!(
         " | WIND: From {} / {} | {cell_state}",

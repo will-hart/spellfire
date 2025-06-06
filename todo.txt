@@ -43,6 +43,7 @@ Polish
 - [ ] music
 - [ ] redraw map without respawning sprites (see map::redraw_map system) - possibly use a texture?
 - [ ] scenarios - specify seed, city location, fire locations + time, time limit?
+- [ ] lumber mills can also plant trees in grass
 
 Bugs
 

@@ -3,6 +3,7 @@
 use std::time::Duration;
 
 use bevy::{
+    ecs::world::OnDespawn,
     image::{ImageLoaderSettings, ImageSampler},
     prelude::*,
     time::common_conditions::on_timer,
@@ -64,6 +65,8 @@ pub(super) fn plugin(app: &mut App) {
             ),
         ),
     );
+
+    app.add_observer(handle_despawned_buildings);
 }
 
 #[derive(Component, Reflect, Debug, Clone, Copy)]
@@ -197,10 +200,6 @@ fn burn_buildings(
             info!("{building_type:?} destroyed by fire");
             commands.entity(entity).despawn();
 
-            if !matches!(building_type, BuildingType::ManaForge) {
-                return;
-            }
-
             // spawn fires around
             let mut rng = rand::thread_rng();
             let num_fires = rng.gen_range(2..=5);
@@ -212,6 +211,34 @@ fn burn_buildings(
                     loc.0 + IVec2::new(rng.gen_range(-10..=10), rng.gen_range(-10..10));
                 commands.trigger(OnLightningStrike(fire_tile_coords));
             }
+        }
+    }
+}
+
+fn handle_despawned_buildings(
+    trigger: Trigger<OnDespawn, BuildingType>,
+    mut resources: ResMut<PlayerResources>,
+    buildings: Query<&BuildingType>,
+) {
+    let target = trigger.target();
+    let Ok(building_type) = buildings.get(target) else {
+        warn!("Unable to find building to handle despawn");
+        return;
+    };
+
+    match building_type {
+        BuildingType::ManaForge => {
+            resources.mana_drain -= 3;
+            // no return because we have chain reaction
+        }
+        BuildingType::Minotaur => {
+            resources.mana_drain += 1;
+            // no chain reaction
+            return;
+        }
+        BuildingType::LumberMill => {
+            // no chain reaction
+            return;
         }
     }
 }

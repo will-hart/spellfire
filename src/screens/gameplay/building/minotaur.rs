@@ -71,6 +71,7 @@ fn spawn_minotaur(
 
     commands.entity(parent_forge_entity).despawn();
     resources.mana -= 30;
+    resources.mana_drain -= 1;
 
     let world_coords = map.world_coords(coords);
     info!("Spawning minotaur at {coords}");
@@ -121,6 +122,8 @@ pub struct Minotaur {
     location: IVec2,
     /// The range of the minotaur (i.e. distance from the building location)
     range: i32,
+    /// Whether the minotaur consumed mana last tick
+    consumed_last_tick: bool,
 }
 
 impl Default for Minotaur {
@@ -129,6 +132,7 @@ impl Default for Minotaur {
             time_since_last_tick: 0.0,
             location: IVec2::ZERO,
             range: 5,
+            consumed_last_tick: true,
         }
     }
 }
@@ -168,6 +172,7 @@ impl Minotaur {
 fn produce_from_minotaur(
     time: Res<Time>,
     mut map: ResMut<GameMap>,
+    mut resources: ResMut<PlayerResources>,
     mut forges: Query<(&BuildingLocation, &mut Minotaur)>,
 ) {
     let delta = time.delta_secs();
@@ -179,6 +184,17 @@ fn produce_from_minotaur(
         }
 
         minotaur.time_since_last_tick = 0.0;
+
+        // check if we have enough mana
+        if !minotaur.consumed_last_tick {
+            if resources.mana <= 0 {
+                info!("Not enough mana to produce from minotaur at {}", loc.0);
+                continue;
+            }
+            resources.mana = (resources.mana - 1).max(0);
+        }
+
+        minotaur.consumed_last_tick = !minotaur.consumed_last_tick;
 
         // reduce the current cell
         if let Some(current) = map.get_mut(minotaur.location) {
