@@ -10,7 +10,7 @@ use rand::Rng;
 
 use crate::{
     Pause,
-    screens::{BuildingType, EndlessMode, Screen},
+    screens::{BuildingMode, BuildingType, EndlessMode, OnRedrawToolbar, RequiresCityHall, Screen},
     wildfire::{OnSpawnMap, SpawnedMap, TerrainCell, TerrainCellState, TerrainType, WindDirection},
 };
 
@@ -114,9 +114,12 @@ fn update_sprites(mut map: ResMut<GameMap>, mut sprites: Query<&mut Sprite, With
 /// TODO: in theory here we could redraw without respawning the sprites
 fn redraw_map(
     mut commands: Commands,
+    mut mode: ResMut<BuildingMode>,
     spawned_maps: Query<Entity, With<SpawnedMap>>,
     buildings: Query<Entity, With<BuildingType>>,
 ) {
+    commands.init_resource::<RequiresCityHall>();
+
     for map in spawned_maps {
         commands.entity(map).despawn();
     }
@@ -126,7 +129,9 @@ fn redraw_map(
     }
 
     let mut rng = rand::thread_rng();
-    commands.trigger(OnSpawnMap::new(rng.r#gen()))
+    commands.trigger(OnSpawnMap::new(rng.r#gen()));
+    *mode = BuildingMode::PlaceCityHall;
+    commands.trigger(OnRedrawToolbar);
 }
 
 pub struct NoiseMap {

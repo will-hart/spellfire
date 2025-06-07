@@ -9,3 +9,7 @@ Hot patching is disabled on Windows for performance reasons. On MacOS, run with:
 ```
 BEVY_ASSET_ROOT="$PWD" dx serve --hot-patch
 ```
+
+## Music
+
+Menu - G C Em Am G C Em Am G B Cm D

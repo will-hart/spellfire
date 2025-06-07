@@ -20,8 +20,8 @@ use crate::{
     screens::{
         Screen,
         gameplay::building::{
-            BuildingAssets, ManaLine, ParentManaForge, ResourceAssets, SpawnLumberMill,
-            SpawnManaForge, SpawnMinotaur,
+            BuildingAssets, ManaLine, ParentBuilding, ResourceAssets, SpawnCityHall,
+            SpawnLumberMill, SpawnManaForge, SpawnMinotaur,
         },
     },
     theme::node_builder::NodeBuilder,
@@ -29,9 +29,11 @@ use crate::{
 };
 
 mod building;
-pub use building::BuildingType;
+mod victory;
+pub use building::{BuildingType, CityHall, RequiresCityHall};
 
 pub(super) fn plugin(app: &mut App) {
+    app.register_type::<ToolbarUi>();
     app.register_type::<EnergyTextMarker>();
     app.register_type::<LumberTextMarker>();
     app.register_type::<BuildingMode>();
@@ -45,9 +47,12 @@ pub(super) fn plugin(app: &mut App) {
     app.init_resource::<BuildingMode>();
     app.init_resource::<BuildTextHint>();
 
-    app.add_plugins(building::plugin);
+    app.add_plugins((building::plugin, victory::plugin));
 
-    app.add_systems(OnEnter(Screen::Gameplay), (spawn_level, spawn_toolbar));
+    app.add_systems(
+        OnEnter(Screen::Gameplay),
+        (spawn_level, spawn_toolbar.after(spawn_level)),
+    );
 
     // Toggle pause on key press.
     app.add_systems(
@@ -93,11 +98,20 @@ pub(super) fn plugin(app: &mut App) {
             .chain()
             .run_if(in_state(Screen::Gameplay).and(in_state(Pause(false)))),
     );
+
+    app.add_observer(handle_on_redraw_toolbar);
 }
 
 #[derive(Resource, Reflect, Debug, Clone, Default)]
 #[reflect(Resource, Default)]
 pub struct EndlessMode;
+
+#[derive(Event, Debug, Clone, Default)]
+pub struct OnRedrawToolbar;
+
+fn handle_on_redraw_toolbar(_trigger: Trigger<OnRedrawToolbar>, mut commands: Commands) {
+    commands.run_system_cached(spawn_toolbar);
+}
 
 #[derive(Resource, Reflect, Debug, Clone)]
 #[reflect(Resource)]
@@ -115,7 +129,7 @@ impl Default for PlayerResources {
         Self {
             mana: 0,
             mana_drain: 0,
-            lumber: 50,
+            lumber: 100,
         }
     }
 }
@@ -126,6 +140,7 @@ pub enum BuildingMode {
     #[default]
     None,
     Lightning,
+    PlaceCityHall,
     PlaceLumberMill,
     PlaceManaForge,
     PlaceMinotaur,
@@ -141,12 +156,24 @@ fn pause(mut next_pause: ResMut<NextState<Pause>>) {
 
 fn handle_mouse_click_input(
     mut commands: Commands,
-    mode: Res<BuildingMode>,
+    mut mode: ResMut<BuildingMode>,
     mouse: Res<MousePosition>,
+    maybe_requires_city_hall: Option<Res<RequiresCityHall>>,
     maybe_map: Option<Res<GameMap>>,
 ) {
+    if maybe_requires_city_hall.is_some() && !matches!(*mode, BuildingMode::PlaceCityHall) {
+        warn!(
+            "Cannot handle - {mode:?}. Requires city hall before any other buildings can be placed"
+        );
+        *mode = BuildingMode::PlaceCityHall;
+        return;
+    }
+
     match *mode {
         BuildingMode::None => {}
+        BuildingMode::PlaceCityHall => {
+            commands.queue(SpawnCityHall(mouse.world_pos));
+        }
         BuildingMode::PlaceLumberMill => {
             commands.queue(SpawnLumberMill(mouse.world_pos));
         }
@@ -289,13 +316,26 @@ fn toolbar_button(
         );
 }
 
+#[derive(Component, Reflect)]
+#[reflect(Component)]
+struct ToolbarUi;
+
 fn spawn_toolbar(
     mut commands: Commands,
+    requires_city_hall: Option<Res<RequiresCityHall>>,
     resource_assets: Res<ResourceAssets>,
     building_assets: Res<BuildingAssets>,
+    previous_toolbars: Query<Entity, With<ToolbarUi>>,
 ) {
+    for previous in &previous_toolbars {
+        commands.entity(previous).despawn();
+    }
+
+    let requires_city_hall = requires_city_hall.is_some();
+
     commands
         .spawn((
+            ToolbarUi,
             toolbar_node()
                 .top(0.0)
                 .justify(JustifyContent::SpaceBetween)
@@ -304,6 +344,10 @@ fn spawn_toolbar(
             StateScoped(Screen::Gameplay),
         ))
         .with_children(|parent| {
+            if requires_city_hall {
+                return;
+            }
+
             parent.spawn((
                 Name::new("Resource Toolbar"),
                 NodeBuilder::new().height(Val::Px(35.0)).center_content().build(),
@@ -382,21 +426,21 @@ fn spawn_toolbar(
                     toolbar_button(toolbar,
                          BuildingMode::PlaceLumberMill,
                          building_assets.lumber_mill.clone(),
-                          "LUMBER MILL. Cost: 30 Lumber. Produces Lumber from nearby trees every (0.5 sec).",
+                          "LUMBER MILL. Cost: 30 Lumber. Produces Lumber from nearby trees every (0.5 sec). Doesn't require a Mana Forge nearby.",
                            "Click the map to place a lumber mill. Press <space> to cancel placement."
                     );
 
                     toolbar_button(toolbar,
                          BuildingMode::PlaceManaForge,
                          building_assets.mana_forge.clone(),
-                          "MANA FORGE. Cost: 50 Lumber. Produces Mana (3/sec), powers other buildings.",
+                          "MANA FORGE. Cost: 50 Lumber. Produces Mana (3/sec), required for most other buildings.",
                            "Click the map to place a forge. Press <space> to cancel placement."
                     );
 
                     toolbar_button(toolbar,
                         BuildingMode::PlaceMinotaur,
                         building_assets.minotaur.clone(),
-                        "MINOTAUR HUTCH. Cost: 40 Mana. The minotaur inside consumes 1 mana / sec and turns trees into grass into dirt.",
+                        "MINOTAUR HUTCH. Cost: 40 Mana. The minotaur inside consumes 1 mana / sec and turns trees into grass into dirt. Requires Mana Forge nearby.",
                         "Click the map to place a minotaur camp (close to a mana forge). Press <space> to cancel placement."
                     );
                 });
@@ -404,10 +448,11 @@ fn spawn_toolbar(
 
     commands.spawn((
         Name::new("Build text toolbar"),
+        ToolbarUi,
         BuildingHintToolbar,
         StateScoped(Screen::Gameplay),
         toolbar_node()
-            .top(35.0)
+            .top(if requires_city_hall { 0.0 } else { 35.0 })
             .center_content()
             .background(SLATE_700)
             .build(),
@@ -477,10 +522,17 @@ fn update_toolbar(
 }
 
 fn update_build_hint_ui(
+    maybe_requires_city_hall: Option<Res<RequiresCityHall>>,
     build_text: Res<BuildTextHint>,
     mut toolbar: Single<&mut Visibility, With<BuildingHintToolbar>>,
     mut hint_text: Single<&mut Text, With<BuildTextMarker>>,
 ) {
+    if maybe_requires_city_hall.is_some() {
+        **toolbar = Visibility::Visible;
+        hint_text.0 = "Click to place your city hall on grass or trees. Take care of this building, if you lose it everything is lost!".into();
+        return;
+    }
+
     if let Some(text) = &build_text.0 {
         **toolbar = Visibility::Visible;
         if hint_text.0 != *text {
@@ -494,7 +546,7 @@ fn update_build_hint_ui(
 fn cancel_cursor_mode(
     mut commands: Commands,
     mut mode: ResMut<BuildingMode>,
-    forge_placements: Query<Entity, With<ParentManaForge>>,
+    forge_placements: Query<Entity, With<ParentBuilding>>,
 ) {
     info!("Resetting cursor mode");
     *mode = BuildingMode::None;
@@ -523,11 +575,23 @@ fn handle_build_mode_changing(
         BuildingMode::None => {
             hint.clear();
         }
-        BuildingMode::Lightning | BuildingMode::PlaceManaForge | BuildingMode::PlaceLumberMill => {}
+        BuildingMode::Lightning | BuildingMode::PlaceCityHall | BuildingMode::PlaceLumberMill => {}
+        BuildingMode::PlaceManaForge => {
+            info!("Spawning building mode items for mana forge placement");
+            commands.spawn((
+                ParentBuilding::new(BuildingType::ManaForge),
+                CursorModeItem,
+                ManaLine {
+                    from: Vec3::ZERO,
+                    to: Vec3::ZERO,
+                    disabled: true,
+                },
+            ));
+        }
         BuildingMode::PlaceMinotaur => {
             info!("Spawning building mode items for minotaur placement");
             commands.spawn((
-                ParentManaForge::new(BuildingType::Minotaur),
+                ParentBuilding::new(BuildingType::Minotaur),
                 CursorModeItem,
                 ManaLine {
                     from: Vec3::ZERO,

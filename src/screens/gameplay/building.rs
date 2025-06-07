@@ -16,16 +16,18 @@ use crate::{
     input::MousePosition,
     screens::{
         PlayerResources, Screen,
-        gameplay::{BuildingMode, building::mana_forge::ManaForge},
+        gameplay::{BuildTextHint, building::mana_forge::ManaForge},
     },
     wildfire::{GameMap, OnLightningStrike},
 };
 
+mod city_hall;
 mod lumber_mill;
 mod mana_forge;
 mod mana_line;
 mod minotaur;
 
+pub use city_hall::{CityHall, RequiresCityHall, SpawnCityHall};
 pub use lumber_mill::SpawnLumberMill;
 pub use mana_forge::SpawnManaForge;
 pub use minotaur::SpawnMinotaur;
@@ -37,12 +39,13 @@ pub(super) fn plugin(app: &mut App) {
     app.register_type::<BuildingLocation>();
     app.register_type::<ManaLine>();
     app.register_type::<ManaLineBalls>();
-    app.register_type::<ParentManaForge>();
+    app.register_type::<ParentBuilding>();
 
     app.load_resource::<BuildingAssets>();
     app.load_resource::<ResourceAssets>();
 
     app.add_plugins((
+        city_hall::plugin,
         lumber_mill::plugin,
         mana_forge::plugin,
         mana_line::plugin,
@@ -72,6 +75,7 @@ pub(super) fn plugin(app: &mut App) {
 #[derive(Component, Reflect, Debug, Clone, Copy)]
 #[reflect(Component)]
 pub enum BuildingType {
+    CityHall,
     ManaForge,
     Minotaur,
     LumberMill,
@@ -104,6 +108,8 @@ impl FromWorld for ResourceAssets {
 #[reflect(Resource)]
 pub struct BuildingAssets {
     #[dependency]
+    pub city_hall: Handle<Image>,
+    #[dependency]
     pub mana_forge: Handle<Image>,
     #[dependency]
     pub minotaur: Handle<Image>,
@@ -118,6 +124,13 @@ impl FromWorld for BuildingAssets {
         let assets = world.resource::<AssetServer>();
 
         Self {
+            city_hall: assets.load_with_settings(
+                "images/city_hall.png",
+                |settings: &mut ImageLoaderSettings| {
+                    // Use `nearest` image sampling to preserve pixel art style.
+                    settings.sampler = ImageSampler::nearest();
+                },
+            ),
             mana_forge: assets.load_with_settings(
                 "images/mana_forge.png",
                 |settings: &mut ImageLoaderSettings| {
@@ -156,12 +169,12 @@ pub struct BuildingLocation(pub IVec2);
 
 #[derive(Component, Reflect, Debug, Copy, Clone)]
 #[reflect(Component)]
-pub struct ParentManaForge {
+pub struct ParentBuilding {
     pub entity: Option<Entity>,
     pub building_type: BuildingType,
 }
 
-impl ParentManaForge {
+impl ParentBuilding {
     pub fn new(building_type: BuildingType) -> Self {
         Self {
             entity: None,
@@ -188,17 +201,35 @@ pub struct ManaLineBalls {
 fn burn_buildings(
     mut commands: Commands,
     map: Res<GameMap>,
-    forges: Query<(Entity, &BuildingLocation, &BuildingType)>,
+    buildings: Query<(Entity, &BuildingLocation, &BuildingType)>,
 ) {
-    for (entity, loc, building_type) in &forges {
-        // check if there is fire near the mana forge
+    let mut despawn_all = false;
+
+    for (entity, loc, building_type) in &buildings {
+        // check if there is fire near the building
         if map.is_on_fire(loc.0)
             || map.is_on_fire(loc.0 + IVec2::new(1, 0))
             || map.is_on_fire(loc.0 + IVec2::new(1, 1))
             || map.is_on_fire(loc.0 + IVec2::new(0, 1))
         {
+            // currently despawns child buildings of a mana forge too due to
+            // hierarchy.
+            // TODO: use some other method that enables juice
             info!("{building_type:?} destroyed by fire");
             commands.entity(entity).despawn();
+
+            match building_type {
+                BuildingType::CityHall => {
+                    despawn_all = true;
+                }
+                BuildingType::Minotaur | BuildingType::LumberMill => {
+                    // no follow up booms
+                    return;
+                }
+                BuildingType::ManaForge => {
+                    // there will be a follow up boom
+                }
+            }
 
             // spawn fires around
             let mut rng = rand::thread_rng();
@@ -213,11 +244,18 @@ fn burn_buildings(
             }
         }
     }
+
+    if despawn_all {
+        for (entity, _, _) in &buildings {
+            commands.entity(entity).despawn();
+        }
+    }
 }
 
 fn handle_despawned_buildings(
     trigger: Trigger<OnDespawn, BuildingType>,
     mut resources: ResMut<PlayerResources>,
+    mut hint: ResMut<BuildTextHint>,
     buildings: Query<&BuildingType>,
 ) {
     let target = trigger.target();
@@ -227,6 +265,9 @@ fn handle_despawned_buildings(
     };
 
     match building_type {
+        BuildingType::CityHall => {
+            hint.set("GAME OVER");
+        }
         BuildingType::ManaForge => {
             resources.mana_drain -= 3;
         }
@@ -239,44 +280,53 @@ fn handle_despawned_buildings(
 
 fn track_building_parent_while_placing(
     mouse: Res<MousePosition>,
-    mode: Res<BuildingMode>,
     map: Res<GameMap>,
-    mut parent_forge: Single<(&mut ParentManaForge, &mut ManaLine)>,
+    mut parent_building: Single<(&mut ParentBuilding, &mut ManaLine)>,
     forges: Query<(Entity, &Transform), With<ManaForge>>,
+    hall: Single<(Entity, &Transform), With<CityHall>>,
 ) {
-    const MAX_DISTANCE_SQR: f32 = 50.0 * 50.0;
+    const MAX_DISTANCE_SQR: f32 = 60.0 * 60.0;
 
-    // unlikely but exit early anyway
-    if !matches!(*mode, BuildingMode::PlaceMinotaur) {
-        return;
-    }
+    let (parent, parent_mana_line) = &mut *parent_building;
 
-    let (forge, parent_mana_line) = &mut *parent_forge;
-
-    // clear previous closest
     let mouse_pos = mouse.world_pos;
-    let mut distances = forges
-        .iter()
-        .filter_map(|(e, tx)| {
-            let distance_to_forge = mouse_pos.distance_squared(tx.translation.truncate());
-            if distance_to_forge > MAX_DISTANCE_SQR * map.sprite_size {
-                return None;
-            }
 
-            Some((e, distance_to_forge, tx.translation.truncate()))
-        })
-        .collect::<Vec<_>>();
+    let closest = if matches!(parent.building_type, BuildingType::ManaForge) {
+        let pos = hall.1.translation.truncate();
 
-    distances.sort_by(|(_, a, _), (_, b, _)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        let distance_to_forge = mouse_pos.distance_squared(pos);
+        if distance_to_forge > MAX_DISTANCE_SQR * map.sprite_size {
+            None
+        } else {
+            Some((hall.0, hall.1.translation.truncate()))
+        }
+    } else {
+        let mut distances = forges
+            .iter()
+            .filter_map(|(e, tx)| {
+                let distance_to_forge = mouse_pos.distance_squared(tx.translation.truncate());
+                if distance_to_forge > MAX_DISTANCE_SQR * map.sprite_size {
+                    return None;
+                }
 
-    let Some((closest_forge, tx)) = distances.first().map(|(e, _, tx)| (e, tx)) else {
-        forge.entity = None;
+                Some((e, distance_to_forge, tx.translation.truncate()))
+            })
+            .collect::<Vec<_>>();
+
+        distances
+            .sort_by(|(_, a, _), (_, b, _)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        distances
+            .first()
+            .map(|(e, _, target_location)| (*e, *target_location))
+    };
+
+    let Some((closest_forge, tx)) = closest else {
+        parent.entity = None;
         parent_mana_line.disabled = true;
-
         return;
     };
 
-    forge.entity = Some(*closest_forge);
+    parent.entity = Some(closest_forge);
     parent_mana_line.from = tx.extend(0.05);
     parent_mana_line.to = mouse_pos.extend(0.05);
     parent_mana_line.disabled = false;
