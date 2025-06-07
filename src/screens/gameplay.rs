@@ -197,19 +197,37 @@ fn handle_mouse_click_input(
     }
 }
 
+#[derive(Reflect, Debug, Default, Clone)]
+pub enum HintMessage {
+    #[default]
+    None,
+    Text(String),
+    BuildingData {
+        name: String,
+        cost: String,
+        details: String,
+    },
+}
+
+impl From<&str> for HintMessage {
+    fn from(value: &str) -> Self {
+        Self::Text(value.to_string())
+    }
+}
+
 #[derive(Resource, Reflect, Debug, Default)]
 #[reflect(Resource)]
-pub struct BuildTextHint(pub Option<String>);
+pub struct BuildTextHint(HintMessage);
 
 impl BuildTextHint {
     /// Clears the text
     pub fn clear(&mut self) {
-        self.0 = None;
+        self.0 = HintMessage::None;
     }
 
-    /// Sets the text
+    /// Sets the hint as text
     pub fn set(&mut self, text: impl Into<String>) {
-        self.0 = Some(text.into());
+        self.0 = HintMessage::Text(text.into());
     }
 }
 
@@ -271,13 +289,13 @@ fn toolbar_button(
     button_label: impl Into<String>,
     mode: BuildingMode,
     image: Handle<Image>,
-    hover_text: impl Into<String>,
-    selected_text: impl Into<String>,
+    hover_text: HintMessage,
+    selected_text: HintMessage,
 ) {
     let mode = mode.clone();
     let label = button_label.into();
-    let selected = selected_text.into();
-    let hover = hover_text.into();
+    let selected = selected_text.clone();
+    let hover = hover_text.clone();
 
     toolbar
         .spawn((
@@ -307,7 +325,7 @@ fn toolbar_button(
                     return;
                 }
 
-                hint.set(hover.clone());
+                hint.0 = hover.clone();
             },
         )
         .observe(
@@ -316,7 +334,7 @@ fn toolbar_button(
                   mut hint: ResMut<BuildTextHint>| {
                 info!("Setting building mode to {mode:?}");
                 *new_mode = mode.clone();
-                hint.set(selected.clone());
+                hint.0 = selected.clone();
             },
         )
         .observe(
@@ -441,45 +459,60 @@ fn spawn_toolbar(
                             "Lightning",
                             BuildingMode::Lightning,
                             building_assets.lightning.clone(),
-                            "Lightning Bolt. Be a pyro and start some fires :D",
-                            "Click to trigger a lightning bolt, press <space> to stop."
+                            HintMessage::BuildingData { name: "Lightning Bolt".into(), cost: "Free!".into(), details: "Be a pyro and start some fires :D".into() },
+                            "Click to trigger a lightning bolt, press <space> to stop.".into()
                         );
                     }
 
                     toolbar_button(toolbar,
                         "Mill",
-                         BuildingMode::PlaceLumberMill,
-                         building_assets.lumber_mill.clone(),
-                          "LUMBER MILL. Cost: 30 Lumber. Produces Lumber from nearby trees every (0.5 sec). Doesn't require a Mana Forge nearby.",
-                           "Click the map to place a lumber mill. Press <space> to cancel placement."
+                        BuildingMode::PlaceLumberMill,
+                        building_assets.lumber_mill.clone(),
+                        HintMessage::BuildingData {
+                            name: "Lumber Mill".into(),
+                            cost: "30 Lumber".into(),
+                            details: "Produces Lumber from nearby trees every (0.5 sec). Doesn't require a Mana Forge nearby.".into(),
+                        },
+                        "Click the map to place a lumber mill. Press <space> to cancel placement.".into()
                     );
 
                     toolbar_button(toolbar,
                         "Mana Forge",
                          BuildingMode::PlaceManaForge,
                          building_assets.mana_forge.clone(),
-                          "MANA FORGE. Cost: 50 Lumber. Produces Mana (3/sec), required for most other buildings.",
-                           "Click the map to place a forge. Press <space> to cancel placement."
+                         HintMessage::BuildingData {
+                             name: "Mana Forge".into(),
+                             cost: "50 Lumber".into(),
+                             details: "MANA FORGE. Cost: 50 Lumber. Produces Mana (3/sec), required for most other buildings.".into()
+                         },
+                        "Click the map to place a forge. Press <space> to cancel placement.".into()
                     );
 
                     toolbar_button(toolbar,
                         "Minotaur",
                         BuildingMode::PlaceMinotaur,
                         building_assets.minotaur.clone(),
-                        "MINOTAUR HUTCH. Cost: 40 Mana. The minotaur inside consumes 1 mana / sec and turns trees into grass into dirt. Requires Mana Forge nearby.",
-                        "Click the map to place a minotaur camp (close to a mana forge). Press <space> to cancel placement."
+                        HintMessage::BuildingData {
+                            name: "Minotaur Hutch".into(),
+                            cost: "40 Mana".into(),
+                            details: "The minotaur inside consumes 1 mana / sec and turns trees into grass into dirt. Requires Mana Forge nearby.".into()
+                        },
+                        "Click the map to place a minotaur camp (close to a mana forge). Press <space> to cancel placement.".into()
                     );
                 });
         });
 
     commands.spawn((
-        Name::new("Build text toolbar"),
+        Name::new("Hint Popup UI"),
         ToolbarUi,
         BuildingHintToolbar,
         StateScoped(Screen::Gameplay),
-        toolbar_node()
+        NodeBuilder::new()
+            .position(PositionType::Absolute)
+            .padding(UiRect::all(Val::Px(10.0)))
             .top(if requires_city_hall { 0.0 } else { 35.0 })
-            .center_content()
+            .right(0.0)
+            .width(Val::Px(250.0))
             .background(SLATE_700)
             .build(),
         children![(
@@ -559,13 +592,25 @@ fn update_build_hint_ui(
         return;
     }
 
-    if let Some(text) = &build_text.0 {
-        **toolbar = Visibility::Visible;
-        if hint_text.0 != *text {
-            hint_text.0 = text.clone();
+    match &build_text.0 {
+        HintMessage::None => {
+            **toolbar = Visibility::Hidden;
         }
-    } else {
-        **toolbar = Visibility::Hidden;
+        HintMessage::Text(text) => {
+            **toolbar = Visibility::Visible;
+            if hint_text.0 != *text {
+                hint_text.0 = text.clone();
+            }
+        }
+        HintMessage::BuildingData {
+            name,
+            cost,
+            details,
+        } => {
+            let text = format!("{name}\n------\nCosts: {cost}\n\n{details}");
+            **toolbar = Visibility::Visible;
+            hint_text.0 = text;
+        }
     }
 }
 
