@@ -434,7 +434,7 @@ fn spawn_toolbar(
                     let show_bolt_in_story = true;
                     #[cfg(not(debug_assertions))]
                     let show_bolt_in_story = false;
-                    
+
                     if maybe_endless_mode.is_some() || show_bolt_in_story{
                         toolbar_button(
                             toolbar,
