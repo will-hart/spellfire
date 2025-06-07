@@ -259,13 +259,23 @@ impl GameMap {
         })
     }
 
+    /// Returns true if any of the cells in the map is on fire
+    pub fn any_on_fire(&self) -> bool {
+        self.data.iter().any(|row| {
+            row.iter()
+                .any(|cell| matches!(cell.terrain, TerrainType::Fire))
+        })
+    }
+
     /// Checks whether the cell at the given tile coords is on fire
-    pub fn is_on_fire(&self, loc: IVec2) -> bool {
-        if let Some(cell) = self.get(loc) {
-            matches!(cell.terrain, TerrainType::Fire)
-        } else {
-            false
-        }
+    pub fn check_on_fire(&self, locs: &[IVec2]) -> bool {
+        locs.iter().any(|loc| {
+            if let Some(cell) = self.get(*loc) {
+                matches!(cell.terrain, TerrainType::Fire)
+            } else {
+                false
+            }
+        })
     }
 
     /// Returns whether the given coordinates are "valid" (i.e. on the map)
@@ -377,7 +387,7 @@ impl GameMap {
                             }
                         }
                     }
-                    TerrainType::Grassland | TerrainType::Tree => {
+                    TerrainType::Grassland | TerrainType::Tree | TerrainType::Building => {
                         let neighbours = self.neighbours(x as i32, y as i32).collect::<Vec<_>>();
                         for (idx, n) in neighbours.iter().enumerate() {
                             let Some(n) = n else {

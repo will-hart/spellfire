@@ -3,7 +3,7 @@
 use crate::{
     asset_tracking::ResourceHandles,
     menus::Menu,
-    screens::{EndlessMode, Screen},
+    screens::{EndlessMode, NextStoryLevel, Screen, StoryModeLevel},
     theme::{node_builder::NodeBuilder, widget},
 };
 use bevy::{
@@ -23,6 +23,8 @@ fn lower_volume_you_psychos(mut vol: ResMut<GlobalVolume>) {
 
 fn spawn_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.remove_resource::<EndlessMode>();
+    commands.remove_resource::<StoryModeLevel>();
+    commands.insert_resource(NextStoryLevel::default());
 
     commands.spawn((
         Name::new("Main Menu Hints"),

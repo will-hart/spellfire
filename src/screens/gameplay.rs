@@ -29,7 +29,9 @@ use crate::{
 };
 
 mod building;
+pub mod story_mode;
 mod victory;
+
 pub use building::{BuildingType, CityHall, RequiresCityHall};
 
 pub(super) fn plugin(app: &mut App) {
@@ -47,7 +49,7 @@ pub(super) fn plugin(app: &mut App) {
     app.init_resource::<BuildingMode>();
     app.init_resource::<BuildTextHint>();
 
-    app.add_plugins((building::plugin, victory::plugin));
+    app.add_plugins((building::plugin, story_mode::plugin, victory::plugin));
 
     app.add_systems(
         OnEnter(Screen::Gameplay),
@@ -87,8 +89,9 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(
         Update,
         (
-            update_toolbar
-                .run_if(resource_exists::<PlayerResources>.and(on_timer(Duration::from_secs(1)))),
+            update_toolbar.run_if(
+                resource_exists::<PlayerResources>.and(on_timer(Duration::from_millis(300))),
+            ),
             update_build_hint_ui,
             handle_mouse_click_input.run_if(input_just_pressed(MouseButton::Left)),
             handle_build_mode_changing
@@ -265,12 +268,14 @@ fn toolbar_node() -> NodeBuilder {
 
 fn toolbar_button(
     toolbar: &mut RelatedSpawnerCommands<ChildOf>,
+    button_label: impl Into<String>,
     mode: BuildingMode,
     image: Handle<Image>,
     hover_text: impl Into<String>,
     selected_text: impl Into<String>,
 ) {
     let mode = mode.clone();
+    let label = button_label.into();
     let selected = selected_text.into();
     let hover = hover_text.into();
 
@@ -280,10 +285,19 @@ fn toolbar_button(
                 // .width(Val::Px(200.0))
                 .height(Val::Px(32.0))
                 .center_content()
+                .background(SLATE_800)
                 .margin(UiRect::right(Val::Px(10.0)))
                 .build(),
             Button,
-            children![ImageNode { image, ..default() }],
+            children![
+                (
+                    NodeBuilder::new()
+                        .margin(UiRect::horizontal(Val::Px(5.0)))
+                        .build(),
+                    ImageNode { image, ..default() }
+                ),
+                (Text::new(label), TextFont::from_font_size(12.0),)
+            ],
         ))
         .observe(
             move |_trigger: Trigger<Pointer<Over>>,
@@ -323,6 +337,7 @@ struct ToolbarUi;
 fn spawn_toolbar(
     mut commands: Commands,
     requires_city_hall: Option<Res<RequiresCityHall>>,
+    maybe_endless_mode: Option<Res<EndlessMode>>,
     resource_assets: Res<ResourceAssets>,
     building_assets: Res<BuildingAssets>,
     previous_toolbars: Query<Entity, With<ToolbarUi>>,
@@ -365,8 +380,8 @@ fn spawn_toolbar(
                     ),
                     (
                         EnergyTextMarker,
-                        NodeBuilder::new().background(SLATE_800).center_content().padding(UiRect::all(Val::Px(3.0))).build(),
-                        Text::new("10"),
+                        NodeBuilder::new().background(SLATE_800).center_content().margin(UiRect::horizontal(Val::Px(5.0))).build(),
+                        Text::new("0"),
                         TextFont {
                             font_size: 12.0,
                             ..default()
@@ -385,8 +400,8 @@ fn spawn_toolbar(
                     ),
                     (
                         LumberTextMarker,
-                        NodeBuilder::new().background(SLATE_800).center_content().padding(UiRect::all(Val::Px(3.0))).build(),
-                        Text::new("10"),
+                        NodeBuilder::new().background(SLATE_800).center_content().margin(UiRect::horizontal(Val::Px(5.0))).build(),
+                        Text::new("0"),
                         TextFont {
                             font_size: 12.0,
                             ..default()
@@ -415,15 +430,24 @@ fn spawn_toolbar(
                         TextFont::from_font_size(12.)
                     ));
 
-                    toolbar_button(
-                        toolbar,
-                        BuildingMode::Lightning,
-                        building_assets.lightning.clone(),
-                        "Lightning Bolt. Be a pyro and start some fires :D",
-                        "Click to trigger a lightning bolt, press <space> to stop."
-                    );
+                    #[cfg(debug_assertions)]
+                    let show_bolt_in_story = true;
+                    #[cfg(not(debug_assertions))]
+                    let show_bolt_in_story = false;
+                    
+                    if maybe_endless_mode.is_some() || show_bolt_in_story{
+                        toolbar_button(
+                            toolbar,
+                            "Lightning",
+                            BuildingMode::Lightning,
+                            building_assets.lightning.clone(),
+                            "Lightning Bolt. Be a pyro and start some fires :D",
+                            "Click to trigger a lightning bolt, press <space> to stop."
+                        );
+                    }
 
                     toolbar_button(toolbar,
+                        "Mill",
                          BuildingMode::PlaceLumberMill,
                          building_assets.lumber_mill.clone(),
                           "LUMBER MILL. Cost: 30 Lumber. Produces Lumber from nearby trees every (0.5 sec). Doesn't require a Mana Forge nearby.",
@@ -431,6 +455,7 @@ fn spawn_toolbar(
                     );
 
                     toolbar_button(toolbar,
+                        "Mana Forge",
                          BuildingMode::PlaceManaForge,
                          building_assets.mana_forge.clone(),
                           "MANA FORGE. Cost: 50 Lumber. Produces Mana (3/sec), required for most other buildings.",
@@ -438,6 +463,7 @@ fn spawn_toolbar(
                     );
 
                     toolbar_button(toolbar,
+                        "Minotaur",
                         BuildingMode::PlaceMinotaur,
                         building_assets.minotaur.clone(),
                         "MINOTAUR HUTCH. Cost: 40 Mana. The minotaur inside consumes 1 mana / sec and turns trees into grass into dirt. Requires Mana Forge nearby.",

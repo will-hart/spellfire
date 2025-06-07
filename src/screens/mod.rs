@@ -5,9 +5,11 @@ mod gameplay;
 mod loading;
 mod splash;
 mod title;
+mod victory;
 
 pub use gameplay::{
     BuildingMode, BuildingType, EndlessMode, OnRedrawToolbar, PlayerResources, RequiresCityHall,
+    story_mode::{NextStoryLevel, StoryModeLevel, get_level_data},
 };
 
 use bevy::prelude::*;
@@ -21,6 +23,7 @@ pub(super) fn plugin(app: &mut App) {
         loading::plugin,
         splash::plugin,
         title::plugin,
+        victory::plugin,
     ));
 }
 
@@ -34,4 +37,5 @@ pub enum Screen {
     Loading,
     Gameplay,
     GameOver,
+    LevelWon,
 }

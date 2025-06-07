@@ -10,8 +10,8 @@ use crate::{
         gameplay::{
             BuildingMode,
             building::{
-                BuildingAssets, BuildingLocation, BuildingType, ManaLine, ManaLineBalls,
-                ParentBuilding, mana_forge::ManaForge,
+                BUILDING_FOOTPRINT_OFFSETS, BuildingAssets, BuildingLocation, BuildingType,
+                ManaLine, ManaLineBalls, ParentBuilding, mana_forge::ManaForge,
             },
         },
     },
@@ -46,7 +46,7 @@ fn spawn_minotaur(
     mut resources: ResMut<PlayerResources>,
     mut building_mode: ResMut<BuildingMode>,
     buildings: Res<BuildingAssets>,
-    map: Res<GameMap>,
+    mut map: ResMut<GameMap>,
     parent_forge: Single<(Entity, &ParentBuilding)>,
     forges: Query<&Transform, With<ManaForge>>,
 ) {
@@ -104,6 +104,13 @@ fn spawn_minotaur(
                 ..default()
             },
         ));
+    });
+
+    // update the map underneath to turn to buildings
+    BUILDING_FOOTPRINT_OFFSETS.iter().for_each(|offset| {
+        if let Some(cell) = map.get_mut(coords + *offset) {
+            cell.terrain = TerrainType::Building;
+        }
     });
 
     *building_mode = BuildingMode::None;
@@ -207,7 +214,8 @@ fn produce_from_minotaur(
                     // continue, don't move on until we have dirt
                     continue;
                 }
-                TerrainType::Dirt
+                TerrainType::Building
+                | TerrainType::Dirt
                 | TerrainType::Stone
                 | TerrainType::Fire
                 | TerrainType::Smoldering => {
