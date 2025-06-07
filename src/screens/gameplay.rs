@@ -48,7 +48,10 @@ pub(super) fn plugin(app: &mut App) {
 
     app.add_plugins(building::plugin);
 
-    app.add_systems(OnEnter(Screen::Gameplay), (spawn_level, spawn_toolbar.after(spawn_level)));
+    app.add_systems(
+        OnEnter(Screen::Gameplay),
+        (spawn_level, spawn_toolbar.after(spawn_level)),
+    );
 
     // Toggle pause on key press.
     app.add_systems(
@@ -105,7 +108,7 @@ pub struct EndlessMode;
 #[derive(Event, Debug, Clone, Default)]
 pub struct OnRedrawToolbar;
 
-fn handle_on_redraw_toolbar(_trigger: Trigger<OnRedrawToolbar>, mut commands:Commands) {
+fn handle_on_redraw_toolbar(_trigger: Trigger<OnRedrawToolbar>, mut commands: Commands) {
     commands.run_system_cached(spawn_toolbar);
 }
 
@@ -157,12 +160,12 @@ fn handle_mouse_click_input(
     maybe_requires_city_hall: Option<Res<RequiresCityHall>>,
     maybe_map: Option<Res<GameMap>>,
 ) {
-    if maybe_requires_city_hall.is_some() {
-        if !matches!(*mode, BuildingMode::PlaceCityHall) {
-            warn!("Cannot handle - {mode:?}. Requires city hall before any other buildings can be placed");
-            *mode = BuildingMode::PlaceCityHall;
-            return;
-        }
+    if maybe_requires_city_hall.is_some() && !matches!(*mode, BuildingMode::PlaceCityHall) {
+        warn!(
+            "Cannot handle - {mode:?}. Requires city hall before any other buildings can be placed"
+        );
+        *mode = BuildingMode::PlaceCityHall;
+        return;
     }
 
     match *mode {
@@ -343,7 +346,7 @@ fn spawn_toolbar(
             if requires_city_hall {
                 return;
             }
-            
+
             parent.spawn((
                 Name::new("Resource Toolbar"),
                 NodeBuilder::new().height(Val::Px(35.0)).center_content().build(),
@@ -448,7 +451,7 @@ fn spawn_toolbar(
         BuildingHintToolbar,
         StateScoped(Screen::Gameplay),
         toolbar_node()
-            .top(if requires_city_hall { 0.0 } else { 35.0})
+            .top(if requires_city_hall { 0.0 } else { 35.0 })
             .center_content()
             .background(SLATE_700)
             .build(),
@@ -525,10 +528,10 @@ fn update_build_hint_ui(
 ) {
     if maybe_requires_city_hall.is_some() {
         **toolbar = Visibility::Visible;
-        hint_text.0 = "Click to place your city hall. Take care of this building, if you lose everything is lost!".into();
+        hint_text.0 = "Click to place your city hall on grass or trees. Take care of this building, if you lose it everything is lost!".into();
         return;
     }
-    
+
     if let Some(text) = &build_text.0 {
         **toolbar = Visibility::Visible;
         if hint_text.0 != *text {

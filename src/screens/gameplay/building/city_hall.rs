@@ -50,13 +50,31 @@ fn spawn_city_hall(
         return;
     }
 
+    let Some(cell) = map.get(coords) else {
+        warn!("Can't find cell to verify city hall location. Aborting placement");
+        return;
+    };
+
+    match cell.terrain {
+        crate::wildfire::TerrainType::Grassland | crate::wildfire::TerrainType::Tree => {
+            // nop
+        }
+        crate::wildfire::TerrainType::Dirt
+        | crate::wildfire::TerrainType::Stone
+        | crate::wildfire::TerrainType::Fire
+        | crate::wildfire::TerrainType::Smoldering => {
+            warn!("Can't place city hall on invalid terrain. Aborting placement");
+            return;
+        }
+    }
+
     let clamped_world_coords = map.world_coords(coords);
 
     info!("Spawning city hall at {coords}");
     commands.spawn((
         BuildingLocation(coords),
         BuildingType::CityHall,
-        CityHall::default(),
+        CityHall,
         StateScoped(Screen::Gameplay),
         Transform::from_translation(clamped_world_coords.extend(0.1)),
         Visibility::Visible,
@@ -74,6 +92,6 @@ fn spawn_city_hall(
 }
 
 /// A mana producing building
-#[derive(Component, Debug, Reflect, Default)]
+#[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
 pub struct CityHall;
