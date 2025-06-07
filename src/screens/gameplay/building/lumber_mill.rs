@@ -161,6 +161,7 @@ fn produce_from_lumber_mill(
                 continue;
             }
             TerrainType::Dirt
+            | TerrainType::Building
             | TerrainType::Grassland
             | TerrainType::Stone
             | TerrainType::Fire

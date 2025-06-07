@@ -9,12 +9,12 @@ use crate::{
         gameplay::{
             BuildingMode,
             building::{
-                BuildingAssets, BuildingLocation, BuildingType, ManaLine, ParentBuilding,
-                city_hall::CityHall,
+                BUILDING_FOOTPRINT_OFFSETS, BuildingAssets, BuildingLocation, BuildingType,
+                ManaLine, ParentBuilding, city_hall::CityHall,
             },
         },
     },
-    wildfire::GameMap,
+    wildfire::{GameMap, TerrainType},
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -45,7 +45,7 @@ fn spawn_mana_forge(
     mut resources: ResMut<PlayerResources>,
     mut building_mode: ResMut<BuildingMode>,
     buildings: Res<BuildingAssets>,
-    map: Res<GameMap>,
+    mut map: ResMut<GameMap>,
     parent_forge: Single<(Entity, &ParentBuilding)>,
     hall: Single<&Transform, With<CityHall>>,
 ) {
@@ -90,6 +90,13 @@ fn spawn_mana_forge(
             ..default()
         },
     ));
+
+    // update the map underneath to turn to buildings
+    BUILDING_FOOTPRINT_OFFSETS.iter().for_each(|offset| {
+        if let Some(cell) = map.get_mut(coords + *offset) {
+            cell.terrain = TerrainType::Building;
+        }
+    });
 
     *building_mode = BuildingMode::None;
 }

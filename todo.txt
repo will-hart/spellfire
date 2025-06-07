@@ -47,6 +47,7 @@ Polish
 - [ ] music
   - [x] title
   - [ ] gameplay
+    - [ ] track 1 - Em 6/2+3 5/2+3 4/2+3 Am 6/2+3 5/2+3 4/2+3 
 - [ ] lumber mills can also plant trees in grass
 - [ ] more building types
 
@@ -58,4 +59,4 @@ Bugs
 
 - [x] can place buildings off the map
 - [x] Minotaur right on the edge of the map has out of bounds issue when moving
-- [ ] GAME BREAKING EXPLOIT: terrain underneath a mana forge or city hall can be turned to dirt, meaning it cannot be destroyed
+- [x] GAME BREAKING EXPLOIT: terrain underneath a mana forge or city hall can be turned to dirt, meaning it cannot be destroyed

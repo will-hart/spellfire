@@ -8,10 +8,12 @@ use crate::{
         Screen,
         gameplay::{
             BuildingMode, OnRedrawToolbar,
-            building::{BuildingAssets, BuildingLocation, BuildingType},
+            building::{
+                BUILDING_FOOTPRINT_OFFSETS, BuildingAssets, BuildingLocation, BuildingType,
+            },
         },
     },
-    wildfire::GameMap,
+    wildfire::{GameMap, TerrainType},
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -37,7 +39,7 @@ fn spawn_city_hall(
     mut commands: Commands,
     mut building_mode: ResMut<BuildingMode>,
     buildings: Res<BuildingAssets>,
-    map: Res<GameMap>,
+    mut map: ResMut<GameMap>,
     existing_city_halls: Query<Entity, With<CityHall>>,
 ) {
     if !existing_city_halls.is_empty() {
@@ -56,13 +58,14 @@ fn spawn_city_hall(
     };
 
     match cell.terrain {
-        crate::wildfire::TerrainType::Grassland | crate::wildfire::TerrainType::Tree => {
+        TerrainType::Grassland | crate::wildfire::TerrainType::Tree => {
             // nop
         }
-        crate::wildfire::TerrainType::Dirt
-        | crate::wildfire::TerrainType::Stone
-        | crate::wildfire::TerrainType::Fire
-        | crate::wildfire::TerrainType::Smoldering => {
+        TerrainType::Dirt
+        | TerrainType::Stone
+        | TerrainType::Fire
+        | TerrainType::Smoldering
+        | TerrainType::Building => {
             warn!("Can't place city hall on invalid terrain. Aborting placement");
             return;
         }
@@ -85,6 +88,13 @@ fn spawn_city_hall(
             ..default()
         },
     ));
+
+    // update the map underneath to turn to buildings
+    BUILDING_FOOTPRINT_OFFSETS.iter().for_each(|offset| {
+        if let Some(cell) = map.get_mut(coords + *offset) {
+            cell.terrain = TerrainType::Building;
+        }
+    });
 
     *building_mode = BuildingMode::None;
     commands.remove_resource::<RequiresCityHall>();

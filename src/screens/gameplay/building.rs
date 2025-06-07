@@ -32,6 +32,13 @@ pub use lumber_mill::SpawnLumberMill;
 pub use mana_forge::SpawnManaForge;
 pub use minotaur::SpawnMinotaur;
 
+pub const BUILDING_FOOTPRINT_OFFSETS: [IVec2; 4] = [
+    IVec2::ZERO,
+    IVec2::new(1, 0),
+    IVec2::new(1, 1),
+    IVec2::new(0, 1),
+];
+
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<BuildingAssets>();
     app.register_type::<ResourceAssets>();
@@ -54,19 +61,15 @@ pub(super) fn plugin(app: &mut App) {
 
     app.add_systems(
         Update,
-        (
-            burn_buildings.run_if(
-                on_timer(Duration::from_millis(100))
-                    .and(in_state(Pause(false)))
-                    .and(in_state(Screen::Gameplay))
-                    .and(resource_exists::<PlayerResources>),
-            ),
-            track_building_parent_while_placing.run_if(
+        ((
+            burn_buildings.run_if(on_timer(Duration::from_millis(100))),
+            track_building_parent_while_placing,
+        )
+            .run_if(
                 in_state(Pause(false))
                     .and(in_state(Screen::Gameplay))
                     .and(resource_exists::<PlayerResources>),
-            ),
-        ),
+            ),),
     );
 
     app.add_observer(handle_despawned_buildings);
@@ -207,11 +210,12 @@ fn burn_buildings(
 
     for (entity, loc, building_type) in &buildings {
         // check if there is fire near the building
-        if map.is_on_fire(loc.0)
-            || map.is_on_fire(loc.0 + IVec2::new(1, 0))
-            || map.is_on_fire(loc.0 + IVec2::new(1, 1))
-            || map.is_on_fire(loc.0 + IVec2::new(0, 1))
-        {
+        if map.any_on_fire(&[
+            loc.0,
+            loc.0 + IVec2::new(1, 0),
+            loc.0 + IVec2::new(1, 1),
+            loc.0 + IVec2::new(0, 1),
+        ]) {
             // currently despawns child buildings of a mana forge too due to
             // hierarchy.
             // TODO: use some other method that enables juice
