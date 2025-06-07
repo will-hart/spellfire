@@ -6,8 +6,8 @@ use bevy::prelude::*;
 
 use crate::{
     Pause,
-    screens::Screen,
-    wildfire::{GOOD_SEEDS, OnLightningStrike},
+    screens::{Screen, gameplay::building::SpawnCityHall},
+    wildfire::{GOOD_SEEDS, GameMap, OnLightningStrike},
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -39,8 +39,15 @@ pub struct StoryModeLevel {
 
 impl Command for StoryModeLevel {
     fn apply(self, world: &mut World) -> () {
-        todo!()
+        let _ = world.run_system_cached_with(spawn_story, self);
     }
+}
+
+fn spawn_story(In(config): In<StoryModeLevel>, mut commands: Commands, map: Res<GameMap>) {
+    info!("Spawning items for level");
+
+    let world_coords = map.world_coords(config.starting_location);
+    commands.queue(SpawnCityHall(world_coords));
 }
 
 /// Tick the level elapsed time while unpaused
@@ -66,8 +73,8 @@ pub fn get_level_data(lvl: usize) -> Option<StoryModeLevel> {
     if lvl == 1 {
         Some(StoryModeLevel {
             map_seed: GOOD_SEEDS[0],
-            starting_location: IVec2 { x: 50, y: 50 },
-            bolts: vec![(10.0, IVec2 { x: 45, y: 45 })].into(),
+            starting_location: IVec2 { x: 168, y: 243 },
+            bolts: vec![(10.0, IVec2 { x: 53, y: 15 })].into(),
             elapsed_time: 0.0,
         })
     } else {
