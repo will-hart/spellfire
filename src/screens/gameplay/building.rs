@@ -210,7 +210,7 @@ fn burn_buildings(
 
     for (entity, loc, building_type) in &buildings {
         // check if there is fire near the building
-        if map.any_on_fire(&[
+        if map.check_on_fire(&[
             loc.0,
             loc.0 + IVec2::new(1, 0),
             loc.0 + IVec2::new(1, 1),
@@ -258,10 +258,15 @@ fn burn_buildings(
 
 fn handle_despawned_buildings(
     trigger: Trigger<OnDespawn, BuildingType>,
-    mut resources: ResMut<PlayerResources>,
+    resources: Option<ResMut<PlayerResources>>,
     mut hint: ResMut<BuildTextHint>,
     buildings: Query<&BuildingType>,
 ) {
+    let Some(mut resources) = resources else {
+        // probably because we're exiting the game or to menu
+        return;
+    };
+
     let target = trigger.target();
     let Ok(building_type) = buildings.get(target) else {
         warn!("Unable to find building to handle despawn");
