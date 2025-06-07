@@ -29,7 +29,9 @@ use crate::{
 };
 
 mod building;
+pub mod story_mode;
 mod victory;
+
 pub use building::{BuildingType, CityHall, RequiresCityHall};
 
 pub(super) fn plugin(app: &mut App) {
@@ -47,7 +49,7 @@ pub(super) fn plugin(app: &mut App) {
     app.init_resource::<BuildingMode>();
     app.init_resource::<BuildTextHint>();
 
-    app.add_plugins((building::plugin, victory::plugin));
+    app.add_plugins((building::plugin, story_mode::plugin, victory::plugin));
 
     app.add_systems(
         OnEnter(Screen::Gameplay),

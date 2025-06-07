@@ -8,6 +8,7 @@ mod title;
 
 pub use gameplay::{
     BuildingMode, BuildingType, EndlessMode, OnRedrawToolbar, PlayerResources, RequiresCityHall,
+    story_mode::{StoryModeLevel, get_level_data},
 };
 
 use bevy::prelude::*;
