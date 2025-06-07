@@ -129,7 +129,7 @@ impl Default for PlayerResources {
         Self {
             mana: 0,
             mana_drain: 0,
-            lumber: 50,
+            lumber: 100,
         }
     }
 }
@@ -426,21 +426,21 @@ fn spawn_toolbar(
                     toolbar_button(toolbar,
                          BuildingMode::PlaceLumberMill,
                          building_assets.lumber_mill.clone(),
-                          "LUMBER MILL. Cost: 30 Lumber. Produces Lumber from nearby trees every (0.5 sec).",
+                          "LUMBER MILL. Cost: 30 Lumber. Produces Lumber from nearby trees every (0.5 sec). Doesn't require a Mana Forge nearby.",
                            "Click the map to place a lumber mill. Press <space> to cancel placement."
                     );
 
                     toolbar_button(toolbar,
                          BuildingMode::PlaceManaForge,
                          building_assets.mana_forge.clone(),
-                          "MANA FORGE. Cost: 50 Lumber. Produces Mana (3/sec), powers other buildings.",
+                          "MANA FORGE. Cost: 50 Lumber. Produces Mana (3/sec), required for most other buildings.",
                            "Click the map to place a forge. Press <space> to cancel placement."
                     );
 
                     toolbar_button(toolbar,
                         BuildingMode::PlaceMinotaur,
                         building_assets.minotaur.clone(),
-                        "MINOTAUR HUTCH. Cost: 40 Mana. The minotaur inside consumes 1 mana / sec and turns trees into grass into dirt.",
+                        "MINOTAUR HUTCH. Cost: 40 Mana. The minotaur inside consumes 1 mana / sec and turns trees into grass into dirt. Requires Mana Forge nearby.",
                         "Click the map to place a minotaur camp (close to a mana forge). Press <space> to cancel placement."
                     );
                 });
