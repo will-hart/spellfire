@@ -5,7 +5,7 @@ mod loading;
 mod splash;
 mod title;
 
-pub use gameplay::{BuildingType, EndlessMode, PlayerResources};
+pub use gameplay::{BuildingMode, BuildingType, EndlessMode, PlayerResources, RequiresCityHall};
 
 use bevy::prelude::*;
 

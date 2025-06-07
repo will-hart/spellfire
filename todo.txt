@@ -19,9 +19,10 @@ Building placement
 Missions and Victory conditions
 
 - [ ] add city to defend - chain of mana forges from this building
-- [ ] add victory condition when fire is out
-- [ ] add defeat condition when fire burns target
+  - [x] add building and spawning / destruction logic
+  - [x] add rules for placing building at start of endless
 - [ ] scenarios - specify seed, city location, fire locations + time, time limit?
+- [ ] add victory condition when fire is out
 
 Fire sim
 

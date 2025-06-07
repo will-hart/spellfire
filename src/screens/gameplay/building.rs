@@ -16,16 +16,18 @@ use crate::{
     input::MousePosition,
     screens::{
         PlayerResources, Screen,
-        gameplay::{BuildingMode, building::mana_forge::ManaForge},
+        gameplay::{BuildTextHint, BuildingMode, building::mana_forge::ManaForge},
     },
     wildfire::{GameMap, OnLightningStrike},
 };
 
+mod city_hall;
 mod lumber_mill;
 mod mana_forge;
 mod mana_line;
 mod minotaur;
 
+pub use city_hall::{RequiresCityHall, SpawnCityHall};
 pub use lumber_mill::SpawnLumberMill;
 pub use mana_forge::SpawnManaForge;
 pub use minotaur::SpawnMinotaur;
@@ -43,6 +45,7 @@ pub(super) fn plugin(app: &mut App) {
     app.load_resource::<ResourceAssets>();
 
     app.add_plugins((
+        city_hall::plugin,
         lumber_mill::plugin,
         mana_forge::plugin,
         mana_line::plugin,
@@ -72,6 +75,7 @@ pub(super) fn plugin(app: &mut App) {
 #[derive(Component, Reflect, Debug, Clone, Copy)]
 #[reflect(Component)]
 pub enum BuildingType {
+    CityHall,
     ManaForge,
     Minotaur,
     LumberMill,
@@ -104,6 +108,8 @@ impl FromWorld for ResourceAssets {
 #[reflect(Resource)]
 pub struct BuildingAssets {
     #[dependency]
+    pub city_hall: Handle<Image>,
+    #[dependency]
     pub mana_forge: Handle<Image>,
     #[dependency]
     pub minotaur: Handle<Image>,
@@ -118,6 +124,13 @@ impl FromWorld for BuildingAssets {
         let assets = world.resource::<AssetServer>();
 
         Self {
+            city_hall: assets.load_with_settings(
+                "images/city_hall.png",
+                |settings: &mut ImageLoaderSettings| {
+                    // Use `nearest` image sampling to preserve pixel art style.
+                    settings.sampler = ImageSampler::nearest();
+                },
+            ),
             mana_forge: assets.load_with_settings(
                 "images/mana_forge.png",
                 |settings: &mut ImageLoaderSettings| {
@@ -218,6 +231,7 @@ fn burn_buildings(
 fn handle_despawned_buildings(
     trigger: Trigger<OnDespawn, BuildingType>,
     mut resources: ResMut<PlayerResources>,
+    mut hint: ResMut<BuildTextHint>,
     buildings: Query<&BuildingType>,
 ) {
     let target = trigger.target();
@@ -227,6 +241,9 @@ fn handle_despawned_buildings(
     };
 
     match building_type {
+        BuildingType::CityHall => {
+            hint.set("GAME OVER");
+        }
         BuildingType::ManaForge => {
             resources.mana_drain -= 3;
         }
