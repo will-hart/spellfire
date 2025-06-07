@@ -6,7 +6,7 @@ use rand::Rng;
 use crate::{
     asset_tracking::LoadResource,
     screens::{
-        BuildingMode, EndlessMode, PlayerResources, RequiresCityHall, Screen, StoryModeLevel,
+        BuildingMode, EndlessMode, NextStoryLevel, PlayerResources, RequiresCityHall, Screen,
         get_level_data,
     },
     wildfire::{GameMap, OnSpawnMap, SpawnedMap},
@@ -39,6 +39,7 @@ impl FromWorld for LevelAssets {
 pub fn spawn_level(
     mut commands: Commands,
     endless_mode: Option<Res<EndlessMode>>,
+    next_story_level: Res<NextStoryLevel>,
     mut mode: ResMut<BuildingMode>,
     mut next_screen: ResMut<NextState<Screen>>,
 ) {
@@ -54,7 +55,7 @@ pub fn spawn_level(
         *mode = BuildingMode::PlaceCityHall;
         commands.init_resource::<RequiresCityHall>();
     } else {
-        let Some(level_data) = get_level_data(1) else {
+        let Some(level_data) = get_level_data(next_story_level.0) else {
             warn!("No level exists, aborting");
             next_screen.set(Screen::Title);
             return;
@@ -72,7 +73,6 @@ fn despawn_maps(mut commands: Commands, maps: Query<Entity, With<SpawnedMap>>) {
         commands.entity(entity).despawn();
     }
 
-    commands.remove_resource::<StoryModeLevel>();
     commands.remove_resource::<GameMap>();
     commands.remove_resource::<PlayerResources>();
 }

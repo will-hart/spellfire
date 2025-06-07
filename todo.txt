@@ -18,12 +18,12 @@ Building placement
 
 Missions and Victory conditions
 
-- [ ] add city to defend - chain of mana forges from this building
+- [x] add city to defend - chain of mana forges from this building
   - [x] add building and spawning / destruction logic
   - [x] add rules for placing building at start of endless
   - [x] game over screen
-- [ ] scenarios - specify seed, city location, fire locations + time, time limit?
-- [ ] add victory condition when fire is out
+- [x] scenarios - specify seed, city location, fire locations + time, time limit?
+- [x] add victory condition when fire is out
 
 Fire sim
 
@@ -36,6 +36,7 @@ Juice
 - [ ] animated power surge to child buildings through mana lines
 - [ ] animated child building detonation
 - [ ] audio on building explode
+- [ ] lightning bolts change to animated flaming meteors
 - [x] animated connection to child buildings
 
 Polish

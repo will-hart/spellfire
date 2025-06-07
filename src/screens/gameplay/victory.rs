@@ -39,8 +39,12 @@ fn track_defeat_conditions(
 
 /// In story mode, victory is when there is no more fire and the last lightning
 /// bolt has been launched
-fn track_victory_conditions(map: Res<GameMap>, level: Res<StoryModeLevel>) {
+fn track_victory_conditions(
+    map: Res<GameMap>,
+    level: Res<StoryModeLevel>,
+    mut next_state: ResMut<NextState<Screen>>,
+) {
     if level.bolts.is_empty() && !map.any_on_fire() {
-        error!("VICTORY");
+        next_state.set(Screen::LevelWon);
     }
 }

@@ -337,6 +337,7 @@ struct ToolbarUi;
 fn spawn_toolbar(
     mut commands: Commands,
     requires_city_hall: Option<Res<RequiresCityHall>>,
+    maybe_endless_mode: Option<Res<EndlessMode>>,
     resource_assets: Res<ResourceAssets>,
     building_assets: Res<BuildingAssets>,
     previous_toolbars: Query<Entity, With<ToolbarUi>>,
@@ -429,14 +430,21 @@ fn spawn_toolbar(
                         TextFont::from_font_size(12.)
                     ));
 
-                    toolbar_button(
-                        toolbar,
-                        "Lightning",
-                        BuildingMode::Lightning,
-                        building_assets.lightning.clone(),
-                        "Lightning Bolt. Be a pyro and start some fires :D",
-                        "Click to trigger a lightning bolt, press <space> to stop."
-                    );
+                    #[cfg(debug_assertions)]
+                    let show_bolt_in_story = true;
+                    #[cfg(not(debug_assertions))]
+                    let show_bolt_in_story = false;
+                    
+                    if maybe_endless_mode.is_some() || show_bolt_in_story{
+                        toolbar_button(
+                            toolbar,
+                            "Lightning",
+                            BuildingMode::Lightning,
+                            building_assets.lightning.clone(),
+                            "Lightning Bolt. Be a pyro and start some fires :D",
+                            "Click to trigger a lightning bolt, press <space> to stop."
+                        );
+                    }
 
                     toolbar_button(toolbar,
                         "Mill",
