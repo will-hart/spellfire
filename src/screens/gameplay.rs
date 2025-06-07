@@ -267,12 +267,14 @@ fn toolbar_node() -> NodeBuilder {
 
 fn toolbar_button(
     toolbar: &mut RelatedSpawnerCommands<ChildOf>,
+    button_label: impl Into<String>,
     mode: BuildingMode,
     image: Handle<Image>,
     hover_text: impl Into<String>,
     selected_text: impl Into<String>,
 ) {
     let mode = mode.clone();
+    let label = button_label.into();
     let selected = selected_text.into();
     let hover = hover_text.into();
 
@@ -282,10 +284,19 @@ fn toolbar_button(
                 // .width(Val::Px(200.0))
                 .height(Val::Px(32.0))
                 .center_content()
+                .background(SLATE_800)
                 .margin(UiRect::right(Val::Px(10.0)))
                 .build(),
             Button,
-            children![ImageNode { image, ..default() }],
+            children![
+                (
+                    NodeBuilder::new()
+                        .margin(UiRect::horizontal(Val::Px(5.0)))
+                        .build(),
+                    ImageNode { image, ..default() }
+                ),
+                (Text::new(label), TextFont::from_font_size(12.0),)
+            ],
         ))
         .observe(
             move |_trigger: Trigger<Pointer<Over>>,
@@ -419,6 +430,7 @@ fn spawn_toolbar(
 
                     toolbar_button(
                         toolbar,
+                        "Lightning",
                         BuildingMode::Lightning,
                         building_assets.lightning.clone(),
                         "Lightning Bolt. Be a pyro and start some fires :D",
@@ -426,6 +438,7 @@ fn spawn_toolbar(
                     );
 
                     toolbar_button(toolbar,
+                        "Mill",
                          BuildingMode::PlaceLumberMill,
                          building_assets.lumber_mill.clone(),
                           "LUMBER MILL. Cost: 30 Lumber. Produces Lumber from nearby trees every (0.5 sec). Doesn't require a Mana Forge nearby.",
@@ -433,6 +446,7 @@ fn spawn_toolbar(
                     );
 
                     toolbar_button(toolbar,
+                        "Mana Forge",
                          BuildingMode::PlaceManaForge,
                          building_assets.mana_forge.clone(),
                           "MANA FORGE. Cost: 50 Lumber. Produces Mana (3/sec), required for most other buildings.",
@@ -440,6 +454,7 @@ fn spawn_toolbar(
                     );
 
                     toolbar_button(toolbar,
+                        "Minotaur",
                         BuildingMode::PlaceMinotaur,
                         building_assets.minotaur.clone(),
                         "MINOTAUR HUTCH. Cost: 40 Mana. The minotaur inside consumes 1 mana / sec and turns trees into grass into dirt. Requires Mana Forge nearby.",
