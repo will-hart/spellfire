@@ -204,17 +204,35 @@ pub struct ManaLineBalls {
 fn burn_buildings(
     mut commands: Commands,
     map: Res<GameMap>,
-    forges: Query<(Entity, &BuildingLocation, &BuildingType)>,
+    buildings: Query<(Entity, &BuildingLocation, &BuildingType)>,
 ) {
-    for (entity, loc, building_type) in &forges {
-        // check if there is fire near the mana forge
+    let mut despawn_all = false;
+
+    for (entity, loc, building_type) in &buildings {
+        // check if there is fire near the building
         if map.is_on_fire(loc.0)
             || map.is_on_fire(loc.0 + IVec2::new(1, 0))
             || map.is_on_fire(loc.0 + IVec2::new(1, 1))
             || map.is_on_fire(loc.0 + IVec2::new(0, 1))
         {
+            // currently despawns child buildings of a mana forge too due to
+            // hierarchy.
+            // TODO: use some other method that enables juice
             info!("{building_type:?} destroyed by fire");
             commands.entity(entity).despawn();
+
+            match building_type {
+                BuildingType::CityHall => {
+                    despawn_all = true;
+                }
+                BuildingType::Minotaur | BuildingType::LumberMill => {
+                    // no follow up booms
+                    return;
+                }
+                BuildingType::ManaForge => {
+                    // there will be a follow up boom
+                }
+            }
 
             // spawn fires around
             let mut rng = rand::thread_rng();
@@ -227,6 +245,12 @@ fn burn_buildings(
                     loc.0 + IVec2::new(rng.gen_range(-10..=10), rng.gen_range(-10..10));
                 commands.trigger(OnLightningStrike(fire_tile_coords));
             }
+        }
+    }
+
+    if despawn_all {
+        for (entity, _, _) in &buildings {
+            commands.entity(entity).despawn();
         }
     }
 }
@@ -296,7 +320,7 @@ fn track_building_parent_while_placing(
             .sort_by(|(_, a, _), (_, b, _)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
         distances
             .first()
-            .map(|(e, _, target_location)| (*e, target_location.clone()))
+            .map(|(e, _, target_location)| (*e, *target_location))
     };
 
     let Some((closest_forge, tx)) = closest else {
