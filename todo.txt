@@ -21,6 +21,7 @@ Missions and Victory conditions
 - [ ] add city to defend - chain of mana forges from this building
   - [x] add building and spawning / destruction logic
   - [x] add rules for placing building at start of endless
+  - [x] game over screen
 - [ ] scenarios - specify seed, city location, fire locations + time, time limit?
 - [ ] add victory condition when fire is out
 
@@ -30,9 +31,9 @@ Fire sim
 
 Juice
 
-- [ ] animated mana forge
+- [ ] animated buildings
 - [ ] fireballs on mana forge detonation
-- [ ] animated power surge to child buildings
+- [ ] animated power surge to child buildings through mana lines
 - [ ] animated child building detonation
 - [ ] audio on building explode
 - [x] animated connection to child buildings
@@ -40,7 +41,8 @@ Juice
 Polish
 
 - [ ] menu rejig
-  - [ ] show a fire in the background or a logo
+  - [ ] show a fire in the background or a logo or some sort of interest
+  - [ ] tutorial on the main page
   - [x] buttons down the bottom
 - [ ] music
   - [x] title

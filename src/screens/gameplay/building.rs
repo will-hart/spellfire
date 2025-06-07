@@ -16,10 +16,7 @@ use crate::{
     input::MousePosition,
     screens::{
         PlayerResources, Screen,
-        gameplay::{
-            BuildTextHint,
-            building::{city_hall::CityHall, mana_forge::ManaForge},
-        },
+        gameplay::{BuildTextHint, building::mana_forge::ManaForge},
     },
     wildfire::{GameMap, OnLightningStrike},
 };
@@ -30,7 +27,7 @@ mod mana_forge;
 mod mana_line;
 mod minotaur;
 
-pub use city_hall::{RequiresCityHall, SpawnCityHall};
+pub use city_hall::{CityHall, RequiresCityHall, SpawnCityHall};
 pub use lumber_mill::SpawnLumberMill;
 pub use mana_forge::SpawnManaForge;
 pub use minotaur::SpawnMinotaur;
