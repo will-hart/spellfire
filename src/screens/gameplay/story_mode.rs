@@ -65,6 +65,7 @@ fn spawn_story_lightning_bolts(mut commands: Commands, mut level: ResMut<StoryMo
 
         commands.trigger(OnLightningStrike(*bolt_loc));
         let _ = level.bolts.pop_front();
+        info!("Level has {} bolts remaining", level.bolts.len());
     }
 }
 
@@ -74,7 +75,14 @@ pub fn get_level_data(lvl: usize) -> Option<StoryModeLevel> {
         Some(StoryModeLevel {
             map_seed: GOOD_SEEDS[0],
             starting_location: IVec2 { x: 168, y: 243 },
-            bolts: vec![(10.0, IVec2 { x: 53, y: 15 })].into(),
+            bolts: vec![
+                (10.0, IVec2 { x: 21, y: 46 }),
+                (19.0, IVec2 { x: 27, y: 175 }),
+                (19.2, IVec2 { x: 29, y: 177 }),
+                (19.2, IVec2 { x: 25, y: 173 }),
+            ]
+            .into(),
+
             elapsed_time: 0.0,
         })
     } else {
