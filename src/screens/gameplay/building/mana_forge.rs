@@ -8,7 +8,10 @@ use crate::{
         PlayerResources, Screen,
         gameplay::{
             BuildingMode,
-            building::{BuildingAssets, BuildingLocation, BuildingType},
+            building::{
+                BuildingAssets, BuildingLocation, BuildingType, ManaLine, ParentBuilding,
+                city_hall::CityHall,
+            },
         },
     },
     wildfire::GameMap,
@@ -43,11 +46,19 @@ fn spawn_mana_forge(
     mut building_mode: ResMut<BuildingMode>,
     buildings: Res<BuildingAssets>,
     map: Res<GameMap>,
+    parent_forge: Single<(Entity, &ParentBuilding)>,
+    hall: Single<&Transform, With<CityHall>>,
 ) {
     if resources.lumber < 50 {
         warn!("Not enough lumber to place mana forge!");
         return;
     }
+
+    let Some(_) = parent_forge.1.entity else {
+        warn!("No parent city hall, aborting mana forge placement");
+        return;
+    };
+
     let coords = map.tile_coords(config.0);
     if !map.is_valid_coords(coords) {
         warn!("Invalid coordinates for manaforge, skipping placement");
@@ -64,6 +75,11 @@ fn spawn_mana_forge(
         BuildingLocation(coords),
         BuildingType::ManaForge,
         ManaForge::default(),
+        ManaLine {
+            from: hall.translation,
+            to: clamped_world_coords.extend(0.05),
+            disabled: false,
+        },
         StateScoped(Screen::Gameplay),
         Transform::from_translation(clamped_world_coords.extend(0.1)),
         Visibility::Visible,

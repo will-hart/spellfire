@@ -16,7 +16,10 @@ use crate::{
     input::MousePosition,
     screens::{
         PlayerResources, Screen,
-        gameplay::{BuildTextHint, BuildingMode, building::mana_forge::ManaForge},
+        gameplay::{
+            BuildTextHint,
+            building::{city_hall::CityHall, mana_forge::ManaForge},
+        },
     },
     wildfire::{GameMap, OnLightningStrike},
 };
@@ -39,7 +42,7 @@ pub(super) fn plugin(app: &mut App) {
     app.register_type::<BuildingLocation>();
     app.register_type::<ManaLine>();
     app.register_type::<ManaLineBalls>();
-    app.register_type::<ParentManaForge>();
+    app.register_type::<ParentBuilding>();
 
     app.load_resource::<BuildingAssets>();
     app.load_resource::<ResourceAssets>();
@@ -169,12 +172,12 @@ pub struct BuildingLocation(pub IVec2);
 
 #[derive(Component, Reflect, Debug, Copy, Clone)]
 #[reflect(Component)]
-pub struct ParentManaForge {
+pub struct ParentBuilding {
     pub entity: Option<Entity>,
     pub building_type: BuildingType,
 }
 
-impl ParentManaForge {
+impl ParentBuilding {
     pub fn new(building_type: BuildingType) -> Self {
         Self {
             entity: None,
@@ -256,44 +259,53 @@ fn handle_despawned_buildings(
 
 fn track_building_parent_while_placing(
     mouse: Res<MousePosition>,
-    mode: Res<BuildingMode>,
     map: Res<GameMap>,
-    mut parent_forge: Single<(&mut ParentManaForge, &mut ManaLine)>,
+    mut parent_building: Single<(&mut ParentBuilding, &mut ManaLine)>,
     forges: Query<(Entity, &Transform), With<ManaForge>>,
+    hall: Single<(Entity, &Transform), With<CityHall>>,
 ) {
-    const MAX_DISTANCE_SQR: f32 = 50.0 * 50.0;
+    const MAX_DISTANCE_SQR: f32 = 60.0 * 60.0;
 
-    // unlikely but exit early anyway
-    if !matches!(*mode, BuildingMode::PlaceMinotaur) {
-        return;
-    }
+    let (parent, parent_mana_line) = &mut *parent_building;
 
-    let (forge, parent_mana_line) = &mut *parent_forge;
-
-    // clear previous closest
     let mouse_pos = mouse.world_pos;
-    let mut distances = forges
-        .iter()
-        .filter_map(|(e, tx)| {
-            let distance_to_forge = mouse_pos.distance_squared(tx.translation.truncate());
-            if distance_to_forge > MAX_DISTANCE_SQR * map.sprite_size {
-                return None;
-            }
 
-            Some((e, distance_to_forge, tx.translation.truncate()))
-        })
-        .collect::<Vec<_>>();
+    let closest = if matches!(parent.building_type, BuildingType::ManaForge) {
+        let pos = hall.1.translation.truncate();
 
-    distances.sort_by(|(_, a, _), (_, b, _)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        let distance_to_forge = mouse_pos.distance_squared(pos);
+        if distance_to_forge > MAX_DISTANCE_SQR * map.sprite_size {
+            None
+        } else {
+            Some((hall.0, hall.1.translation.truncate()))
+        }
+    } else {
+        let mut distances = forges
+            .iter()
+            .filter_map(|(e, tx)| {
+                let distance_to_forge = mouse_pos.distance_squared(tx.translation.truncate());
+                if distance_to_forge > MAX_DISTANCE_SQR * map.sprite_size {
+                    return None;
+                }
 
-    let Some((closest_forge, tx)) = distances.first().map(|(e, _, tx)| (e, tx)) else {
-        forge.entity = None;
+                Some((e, distance_to_forge, tx.translation.truncate()))
+            })
+            .collect::<Vec<_>>();
+
+        distances
+            .sort_by(|(_, a, _), (_, b, _)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        distances
+            .first()
+            .map(|(e, _, target_location)| (*e, target_location.clone()))
+    };
+
+    let Some((closest_forge, tx)) = closest else {
+        parent.entity = None;
         parent_mana_line.disabled = true;
-
         return;
     };
 
-    forge.entity = Some(*closest_forge);
+    parent.entity = Some(closest_forge);
     parent_mana_line.from = tx.extend(0.05);
     parent_mana_line.to = mouse_pos.extend(0.05);
     parent_mana_line.disabled = false;

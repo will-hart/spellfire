@@ -11,7 +11,7 @@ use crate::{
             BuildingMode,
             building::{
                 BuildingAssets, BuildingLocation, BuildingType, ManaLine, ManaLineBalls,
-                ParentManaForge, mana_forge::ManaForge,
+                ParentBuilding, mana_forge::ManaForge,
             },
         },
     },
@@ -45,9 +45,9 @@ fn spawn_minotaur(
     mut commands: Commands,
     mut resources: ResMut<PlayerResources>,
     mut building_mode: ResMut<BuildingMode>,
-    parent_forge: Single<(Entity, &ParentManaForge)>,
     buildings: Res<BuildingAssets>,
     map: Res<GameMap>,
+    parent_forge: Single<(Entity, &ParentBuilding)>,
     forges: Query<&Transform, With<ManaForge>>,
 ) {
     if resources.mana < 30 {

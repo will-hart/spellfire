@@ -20,7 +20,7 @@ use crate::{
     screens::{
         Screen,
         gameplay::building::{
-            BuildingAssets, ManaLine, ParentManaForge, ResourceAssets, SpawnCityHall,
+            BuildingAssets, ManaLine, ParentBuilding, ResourceAssets, SpawnCityHall,
             SpawnLumberMill, SpawnManaForge, SpawnMinotaur,
         },
     },
@@ -545,7 +545,7 @@ fn update_build_hint_ui(
 fn cancel_cursor_mode(
     mut commands: Commands,
     mut mode: ResMut<BuildingMode>,
-    forge_placements: Query<Entity, With<ParentManaForge>>,
+    forge_placements: Query<Entity, With<ParentBuilding>>,
 ) {
     info!("Resetting cursor mode");
     *mode = BuildingMode::None;
@@ -574,14 +574,23 @@ fn handle_build_mode_changing(
         BuildingMode::None => {
             hint.clear();
         }
-        BuildingMode::Lightning
-        | BuildingMode::PlaceCityHall
-        | BuildingMode::PlaceManaForge
-        | BuildingMode::PlaceLumberMill => {}
+        BuildingMode::Lightning | BuildingMode::PlaceCityHall | BuildingMode::PlaceLumberMill => {}
+        BuildingMode::PlaceManaForge => {
+            info!("Spawning building mode items for mana forge placement");
+            commands.spawn((
+                ParentBuilding::new(BuildingType::ManaForge),
+                CursorModeItem,
+                ManaLine {
+                    from: Vec3::ZERO,
+                    to: Vec3::ZERO,
+                    disabled: true,
+                },
+            ));
+        }
         BuildingMode::PlaceMinotaur => {
             info!("Spawning building mode items for minotaur placement");
             commands.spawn((
-                ParentManaForge::new(BuildingType::Minotaur),
+                ParentBuilding::new(BuildingType::Minotaur),
                 CursorModeItem,
                 ManaLine {
                     from: Vec3::ZERO,
