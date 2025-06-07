@@ -89,8 +89,9 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(
         Update,
         (
-            update_toolbar
-                .run_if(resource_exists::<PlayerResources>.and(on_timer(Duration::from_secs(1)))),
+            update_toolbar.run_if(
+                resource_exists::<PlayerResources>.and(on_timer(Duration::from_millis(300))),
+            ),
             update_build_hint_ui,
             handle_mouse_click_input.run_if(input_just_pressed(MouseButton::Left)),
             handle_build_mode_changing
@@ -378,8 +379,8 @@ fn spawn_toolbar(
                     ),
                     (
                         EnergyTextMarker,
-                        NodeBuilder::new().background(SLATE_800).center_content().padding(UiRect::all(Val::Px(3.0))).build(),
-                        Text::new("10"),
+                        NodeBuilder::new().background(SLATE_800).center_content().margin(UiRect::horizontal(Val::Px(5.0))).build(),
+                        Text::new("0"),
                         TextFont {
                             font_size: 12.0,
                             ..default()
@@ -398,8 +399,8 @@ fn spawn_toolbar(
                     ),
                     (
                         LumberTextMarker,
-                        NodeBuilder::new().background(SLATE_800).center_content().padding(UiRect::all(Val::Px(3.0))).build(),
-                        Text::new("10"),
+                        NodeBuilder::new().background(SLATE_800).center_content().margin(UiRect::horizontal(Val::Px(5.0))).build(),
+                        Text::new("0"),
                         TextFont {
                             font_size: 12.0,
                             ..default()
