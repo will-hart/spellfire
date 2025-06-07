@@ -5,8 +5,11 @@ use rand::Rng;
 
 use crate::{
     asset_tracking::LoadResource,
-    screens::{EndlessMode, PlayerResources, Screen},
-    wildfire::{GOOD_SEEDS, GameMap, OnSpawnMap, SpawnedMap},
+    screens::{
+        BuildingMode, EndlessMode, NextStoryLevel, PlayerResources, RequiresCityHall, Screen,
+        get_level_data,
+    },
+    wildfire::{GameMap, OnSpawnMap, SpawnedMap},
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -33,17 +36,36 @@ impl FromWorld for LevelAssets {
 }
 
 /// A system that spawns the main level.
-pub fn spawn_level(mut commands: Commands, endless_mode: Option<Res<EndlessMode>>) {
-    let seed = if endless_mode.is_some() {
-        info!("Spawning random level in endless mode");
-        rand::thread_rng().r#gen()
-    } else {
-        info!("Spawning first level");
-        GOOD_SEEDS[0]
-    };
-
-    commands.trigger(OnSpawnMap::new(seed));
+pub fn spawn_level(
+    mut commands: Commands,
+    endless_mode: Option<Res<EndlessMode>>,
+    next_story_level: Res<NextStoryLevel>,
+    mut mode: ResMut<BuildingMode>,
+    mut next_screen: ResMut<NextState<Screen>>,
+) {
+    let endless_mode = endless_mode.is_some();
     commands.init_resource::<PlayerResources>();
+
+    if endless_mode {
+        info!("Spawning random level ixn endless mode");
+
+        let seed = rand::thread_rng().r#gen();
+        commands.trigger(OnSpawnMap::new(seed));
+
+        *mode = BuildingMode::PlaceCityHall;
+        commands.init_resource::<RequiresCityHall>();
+    } else {
+        let Some(level_data) = get_level_data(next_story_level.0) else {
+            warn!("No level exists, aborting");
+            next_screen.set(Screen::Title);
+            return;
+        };
+
+        commands.trigger(OnSpawnMap::new(level_data.map_seed));
+        commands.queue(level_data.clone());
+        commands.insert_resource(level_data);
+        commands.remove_resource::<RequiresCityHall>();
+    }
 }
 
 fn despawn_maps(mut commands: Commands, maps: Query<Entity, With<SpawnedMap>>) {

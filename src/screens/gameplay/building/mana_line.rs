@@ -1,8 +1,7 @@
 //! Code for drawing mana lines
 
 use bevy::{color::palettes::tailwind::SKY_500, prelude::*};
-#[cfg(target_os = "macos")]
-use bevy_simple_subsecond_system::hot;
+// use bevy_simple_subsecond_system::hot;
 use bevy_vector_shapes::prelude::*;
 
 use crate::{
@@ -21,7 +20,7 @@ pub(super) fn plugin(app: &mut App) {
     );
 }
 
-#[cfg_attr(target_os = "macos", hot)]
+// #[cfg_attr(target_os = "macos", hot)]
 fn draw_mana_lines(time: Res<Time>, mut painter: ShapePainter, lines: Query<&ManaLine>) {
     for line in &lines {
         if line.disabled {
@@ -36,7 +35,7 @@ fn draw_mana_lines(time: Res<Time>, mut painter: ShapePainter, lines: Query<&Man
     }
 }
 
-#[cfg_attr(target_os = "macos", hot)]
+// #[cfg_attr(target_os = "macos", hot)]
 fn draw_mana_balls(
     time: Res<Time>,
     mut painter: ShapePainter,

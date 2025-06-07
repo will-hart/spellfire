@@ -1,8 +1,6 @@
 //! Logic + code for placing minotaur hutch buildings
 
 use bevy::{prelude::*, sprite::Anchor};
-#[cfg(target_os = "macos")]
-use bevy_simple_subsecond_system::hot;
 use rand::Rng;
 
 use crate::{
@@ -12,8 +10,8 @@ use crate::{
         gameplay::{
             BuildingMode,
             building::{
-                BuildingAssets, BuildingLocation, BuildingType, ManaLine, ManaLineBalls,
-                ParentManaForge, mana_forge::ManaForge,
+                BUILDING_FOOTPRINT_OFFSETS, BuildingAssets, BuildingLocation, BuildingType,
+                ManaLine, ManaLineBalls, ParentBuilding, mana_forge::ManaForge,
             },
         },
     },
@@ -47,9 +45,9 @@ fn spawn_minotaur(
     mut commands: Commands,
     mut resources: ResMut<PlayerResources>,
     mut building_mode: ResMut<BuildingMode>,
-    parent_forge: Single<(Entity, &ParentManaForge)>,
     buildings: Res<BuildingAssets>,
-    map: Res<GameMap>,
+    mut map: ResMut<GameMap>,
+    parent_forge: Single<(Entity, &ParentBuilding)>,
     forges: Query<&Transform, With<ManaForge>>,
 ) {
     if resources.mana < 30 {
@@ -106,6 +104,13 @@ fn spawn_minotaur(
                 ..default()
             },
         ));
+    });
+
+    // update the map underneath to turn to buildings
+    BUILDING_FOOTPRINT_OFFSETS.iter().for_each(|offset| {
+        if let Some(cell) = map.get_mut(coords + *offset) {
+            cell.terrain = TerrainType::Building;
+        }
     });
 
     *building_mode = BuildingMode::None;
@@ -168,7 +173,7 @@ impl Minotaur {
     }
 }
 
-#[cfg_attr(target_os = "macos", hot)]
+// #[cfg_attr(target_os = "macos", hot)]
 fn produce_from_minotaur(
     time: Res<Time>,
     mut map: ResMut<GameMap>,
@@ -209,7 +214,8 @@ fn produce_from_minotaur(
                     // continue, don't move on until we have dirt
                     continue;
                 }
-                TerrainType::Dirt
+                TerrainType::Building
+                | TerrainType::Dirt
                 | TerrainType::Stone
                 | TerrainType::Fire
                 | TerrainType::Smoldering => {

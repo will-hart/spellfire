@@ -6,7 +6,7 @@ use bevy::{
     color::palettes::{
         css::{BLACK, WHITE},
         tailwind::{
-            AMBER_700, AMBER_900, GREEN_900, LIME_500, ORANGE_600, ORANGE_700, SLATE_700,
+            AMBER_700, AMBER_900, GREEN_900, LIME_500, ORANGE_600, ORANGE_700, PINK_600, SLATE_700,
             STONE_500, YELLOW_400, YELLOW_500, YELLOW_600,
         },
     },
@@ -112,6 +112,8 @@ fn spawn_map(trigger: Trigger<OnSpawnMap>, mut commands: Commands) {
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Reflect, Default)]
 pub enum TerrainType {
     Dirt,
+    /// Buildings burn like grass but cannot be changed by e.g. minotaurs
+    Building,
     #[default]
     Grassland,
     Tree,
@@ -127,7 +129,7 @@ impl TerrainType {
             | TerrainType::Smoldering
             | TerrainType::Dirt
             | TerrainType::Stone => 0.0,
-            TerrainType::Grassland => 0.8,
+            TerrainType::Grassland | TerrainType::Building => 0.6,
             TerrainType::Tree => 0.4,
         }
     }
@@ -142,6 +144,7 @@ impl std::fmt::Display for TerrainType {
                 TerrainType::Dirt => "Earth",
                 TerrainType::Stone => "Stone",
                 TerrainType::Grassland => "Grass",
+                TerrainType::Building => "Building",
                 TerrainType::Tree => "Forest",
                 TerrainType::Fire => "Fire",
                 TerrainType::Smoldering => "Burnt Ground",
@@ -191,6 +194,7 @@ impl std::fmt::Display for TerrainCellState {
                 )
             }
             TerrainType::Dirt
+            | TerrainType::Building
             | TerrainType::Stone
             | TerrainType::Fire
             | TerrainType::Smoldering => write!(f, "{}", self.terrain),
@@ -207,6 +211,7 @@ impl TerrainCellState {
 
     fn colour(&self) -> Color {
         match self.terrain {
+            TerrainType::Building => PINK_600.into(),
             TerrainType::Dirt => Color::Srgba(Srgba {
                 red: 0.37,
                 green: 0.27,

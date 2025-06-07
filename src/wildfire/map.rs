@@ -10,7 +10,7 @@ use rand::Rng;
 
 use crate::{
     Pause,
-    screens::{BuildingType, EndlessMode, Screen},
+    screens::{BuildingMode, BuildingType, EndlessMode, OnRedrawToolbar, RequiresCityHall, Screen},
     wildfire::{OnSpawnMap, SpawnedMap, TerrainCell, TerrainCellState, TerrainType, WindDirection},
 };
 
@@ -114,9 +114,12 @@ fn update_sprites(mut map: ResMut<GameMap>, mut sprites: Query<&mut Sprite, With
 /// TODO: in theory here we could redraw without respawning the sprites
 fn redraw_map(
     mut commands: Commands,
+    mut mode: ResMut<BuildingMode>,
     spawned_maps: Query<Entity, With<SpawnedMap>>,
     buildings: Query<Entity, With<BuildingType>>,
 ) {
+    commands.init_resource::<RequiresCityHall>();
+
     for map in spawned_maps {
         commands.entity(map).despawn();
     }
@@ -126,7 +129,9 @@ fn redraw_map(
     }
 
     let mut rng = rand::thread_rng();
-    commands.trigger(OnSpawnMap::new(rng.r#gen()))
+    commands.trigger(OnSpawnMap::new(rng.r#gen()));
+    *mode = BuildingMode::PlaceCityHall;
+    commands.trigger(OnRedrawToolbar);
 }
 
 pub struct NoiseMap {
@@ -254,13 +259,23 @@ impl GameMap {
         })
     }
 
+    /// Returns true if any of the cells in the map is on fire
+    pub fn any_on_fire(&self) -> bool {
+        self.data.iter().any(|row| {
+            row.iter()
+                .any(|cell| matches!(cell.terrain, TerrainType::Fire))
+        })
+    }
+
     /// Checks whether the cell at the given tile coords is on fire
-    pub fn is_on_fire(&self, loc: IVec2) -> bool {
-        if let Some(cell) = self.get(loc) {
-            matches!(cell.terrain, TerrainType::Fire)
-        } else {
-            false
-        }
+    pub fn check_on_fire(&self, locs: &[IVec2]) -> bool {
+        locs.iter().any(|loc| {
+            if let Some(cell) = self.get(*loc) {
+                matches!(cell.terrain, TerrainType::Fire)
+            } else {
+                false
+            }
+        })
     }
 
     /// Returns whether the given coordinates are "valid" (i.e. on the map)
@@ -372,7 +387,7 @@ impl GameMap {
                             }
                         }
                     }
-                    TerrainType::Grassland | TerrainType::Tree => {
+                    TerrainType::Grassland | TerrainType::Tree | TerrainType::Building => {
                         let neighbours = self.neighbours(x as i32, y as i32).collect::<Vec<_>>();
                         for (idx, n) in neighbours.iter().enumerate() {
                             let Some(n) = n else {

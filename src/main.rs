@@ -15,8 +15,7 @@ mod theme;
 mod wildfire;
 
 use bevy::{asset::AssetMetaCheck, color::palettes::css::BLACK, prelude::*};
-#[cfg(target_os = "macos")]
-use bevy_simple_subsecond_system::prelude::*;
+// use bevy_simple_subsecond_system::prelude::*;
 
 use bevy_vector_shapes::Shape2dPlugin;
 
@@ -64,8 +63,7 @@ impl Plugin for AppPlugin {
             theme::plugin,
         ));
 
-        #[cfg(target_os = "macos")]
-        app.add_plugins(SimpleSubsecondPlugin::default());
+        // app.add_plugins(SimpleSubsecondPlugin::default());
 
         // for shape drawing
         app.add_plugins(Shape2dPlugin::default());

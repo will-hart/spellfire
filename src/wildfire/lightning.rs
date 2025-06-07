@@ -23,9 +23,14 @@ fn handle_lightning_strike(trigger: Trigger<OnLightningStrike>, mut map: ResMut<
 
     match cell.terrain {
         TerrainType::Grassland | TerrainType::Tree => {
+            info!("Spawning lightning strike at {loc}");
             cell.terrain = TerrainType::Fire;
             cell.dirty = true;
         }
-        TerrainType::Fire | TerrainType::Dirt | TerrainType::Stone | TerrainType::Smoldering => {}
+        TerrainType::Building
+        | TerrainType::Fire
+        | TerrainType::Dirt
+        | TerrainType::Stone
+        | TerrainType::Smoldering => {}
     }
 }
