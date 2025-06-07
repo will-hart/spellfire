@@ -6,7 +6,11 @@ use crate::{
     screens::{EndlessMode, Screen},
     theme::{node_builder::NodeBuilder, widget},
 };
-use bevy::{audio::Volume, prelude::*};
+use bevy::{
+    audio::Volume,
+    image::{ImageLoaderSettings, ImageSampler},
+    prelude::*,
+};
 
 pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Menu::Main), spawn_main_menu);
@@ -17,13 +21,66 @@ fn lower_volume_you_psychos(mut vol: ResMut<GlobalVolume>) {
     *vol = GlobalVolume::from(Volume::Linear(0.5));
 }
 
-fn spawn_main_menu(mut commands: Commands) {
+fn spawn_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
     commands.remove_resource::<EndlessMode>();
 
     commands.spawn((
-        Name::new("Main Menu"),
+        Name::new("Main Menu Hints"),
+        GlobalZIndex(2),
+        StateScoped(Menu::Main),
         NodeBuilder::new()
             .width(Val::Percent(100.0))
+            .height(Val::Percent(80.0))
+            .position(PositionType::Absolute)
+            .top(0.0)
+            .padding(UiRect::all(Val::Px(20.0)))
+            .center_content()
+            .flex_direction(FlexDirection::Row)
+            .build(),
+        children![
+            (
+                NodeBuilder::new()
+                    .width(Val::Percent(50.0))
+                    .flex_direction(FlexDirection::Column)
+                    .row_gap(Val::Px(20.0))
+                    .center_content()
+                    .build(),
+                children![ImageNode::new(asset_server.load_with_settings(
+                    // This should be an embedded asset for instant loading, but that is
+                    // currently [broken on Windows Wasm builds](https://github.com/bevyengine/bevy/issues/14246).
+                    "images/logo.png",
+                    |settings: &mut ImageLoaderSettings| {
+                        // Make an exception for the splash image in case
+                        // `ImagePlugin::default_nearest()` is used for pixel art.
+                        settings.sampler = ImageSampler::linear();
+                    },
+                ))],
+            ),
+            (
+                NodeBuilder::new()
+                    .width(Val::Percent(50.0))
+                    .flex_direction(FlexDirection::Column)
+                    .row_gap(Val::Px(20.0))
+                    .build(),
+                children![
+                    (
+                        Text::new("A spell-slinging, wildfire-fighting strategy game"),
+                        TextFont::from_font_size(24.0),
+                    ),
+                    (
+                        Text::new("Made for Bevy Jam 6 by Will Hart"),
+                        TextFont::from_font_size(24.0),
+                    )
+                ]
+            )
+        ],
+    ));
+
+    commands.spawn((
+        Name::new("Main Menu Buttons"),
+        NodeBuilder::new()
+            .width(Val::Percent(100.0))
+            .height(Val::Percent(20.0))
             .position(PositionType::Absolute)
             .bottom(0.0)
             .flex_direction(FlexDirection::Row)

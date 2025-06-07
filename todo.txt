@@ -41,7 +41,7 @@ Juice
 Polish
 
 - [ ] menu rejig
-  - [ ] show a fire in the background or a logo or some sort of interest
+  - [ ] show a fire in the background or something a bit more interesting
   - [ ] tutorial on the main page
   - [x] buttons down the bottom
 - [ ] music
