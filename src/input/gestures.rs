@@ -14,8 +14,8 @@ pub(super) fn plugin(app: &mut App) {
     app.insert_resource(MouseWheelGestures {
         sensitivity: 0.1,
         delta: 0.0,
-        min_scale: 0.4,
-        max_scale: 1.3,
+        min_scale: 0.2,
+        max_scale: 3.0,
     });
 
     app.add_systems(
