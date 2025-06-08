@@ -8,6 +8,7 @@ use crate::{
 };
 use bevy::{
     audio::Volume,
+    color::palettes::{css::WHITE, tailwind::SLATE_300},
     image::{ImageLoaderSettings, ImageSampler},
     prelude::*,
 };
@@ -47,24 +48,17 @@ fn spawn_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                     .row_gap(Val::Px(20.0))
                     .center_content()
                     .build(),
-                children![ImageNode::new(asset_server.load_with_settings(
-                    // This should be an embedded asset for instant loading, but that is
-                    // currently [broken on Windows Wasm builds](https://github.com/bevyengine/bevy/issues/14246).
-                    "images/logo.png",
-                    |settings: &mut ImageLoaderSettings| {
-                        // Make an exception for the splash image in case
-                        // `ImagePlugin::default_nearest()` is used for pixel art.
-                        settings.sampler = ImageSampler::linear();
-                    },
-                ))],
-            ),
-            (
-                NodeBuilder::new()
-                    .width(Val::Percent(50.0))
-                    .flex_direction(FlexDirection::Column)
-                    .row_gap(Val::Px(20.0))
-                    .build(),
                 children![
+                    ImageNode::new(asset_server.load_with_settings(
+                        // This should be an embedded asset for instant loading, but that is
+                        // currently [broken on Windows Wasm builds](https://github.com/bevyengine/bevy/issues/14246).
+                        "images/logo.png",
+                        |settings: &mut ImageLoaderSettings| {
+                            // Make an exception for the splash image in case
+                            // `ImagePlugin::default_nearest()` is used for pixel art.
+                            settings.sampler = ImageSampler::linear();
+                        },
+                    )),
                     (
                         Text::new("A spell-slinging, wildfire-fighting strategy game"),
                         TextFont::from_font_size(24.0),
@@ -73,6 +67,33 @@ fn spawn_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                         Text::new("Made for Bevy Jam 6 by Will Hart"),
                         TextFont::from_font_size(24.0),
                     )
+                ],
+            ),
+            (
+                NodeBuilder::new()
+                    .width(Val::Percent(50.0))
+                    .flex_direction(FlexDirection::Column)
+                    .padding(UiRect::horizontal(Val::Px(20.0)))
+                    .row_gap(Val::Px(20.0))
+                    .build(),
+                children![
+                    (Text::new("Instructions"), TextFont::from_font_size(36.0),),
+                    (
+                        Text::new("You raided their dungeon one too many times and now the Goblin Shaman are out for revenge! They've vowed to use the elemental powers of wind and fire to try to destroy your city. But we aren't defenceless - we can use our own magical powers to save our homes!"),
+                        TextFont::from_font_size(20.0),
+                        TextColor(SLATE_300.into()),
+                    ),
+                    (
+                        Text::new("Protect your City Hall at all costs. Place buildings on the map (see the tooltips) to produce mana and harvest lumber. Summon creatures to defend your City Hall against the raging wildfire!"),
+                        TextFont::from_font_size(20.0),
+                        TextColor(SLATE_300.into()),
+                    )
+,
+                    (
+                        Text::new("Be careful not to let the flames too close to your buildings - if one burns, the magical backlash may trigger some kind of reaction!"),
+                        TextFont::from_font_size(20.0),
+                        TextColor(WHITE.into()),
+)
                 ]
             )
         ],

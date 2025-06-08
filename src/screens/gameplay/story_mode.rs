@@ -7,7 +7,7 @@ use bevy::prelude::*;
 use crate::{
     Pause,
     screens::{Screen, gameplay::building::SpawnCityHall},
-    wildfire::{GOOD_SEEDS, GameMap, OnLightningStrike},
+    wildfire::{GOOD_SEEDS, GameMap, OnMeteorStrike},
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -18,7 +18,7 @@ pub(super) fn plugin(app: &mut App) {
 
     app.add_systems(
         Update,
-        (spawn_story_lightning_bolts, update_story_elapsed_time).run_if(
+        (spawn_story_meteor_bolts, update_story_elapsed_time).run_if(
             in_state(Screen::Gameplay)
                 .and(in_state(Pause(false)))
                 .and(resource_exists::<StoryModeLevel>),
@@ -44,7 +44,7 @@ pub struct StoryModeLevel {
     pub level_number: usize,
     /// The seed to use when spwaning the map
     pub map_seed: i32,
-    /// The lightning bolts to deploy to start the wildfire
+    /// The meteor bolts to deploy to start the wildfire
     pub bolts: VecDeque<(f32, IVec2)>,
     /// The starting location for the city hall (in tile coords)
     pub starting_location: IVec2,
@@ -71,14 +71,14 @@ fn update_story_elapsed_time(time: Res<Time>, mut level: ResMut<StoryModeLevel>)
 }
 
 /// If a bolt is due, spawn it
-fn spawn_story_lightning_bolts(mut commands: Commands, mut level: ResMut<StoryModeLevel>) {
-    // max one lightning bolt per frame just because its easier to write about
+fn spawn_story_meteor_bolts(mut commands: Commands, mut level: ResMut<StoryModeLevel>) {
+    // max one meteor bolt per frame just because its easier to write about
     if let Some((bolt_time, bolt_loc)) = level.bolts.front() {
         if level.elapsed_time < *bolt_time {
             return;
         }
 
-        commands.trigger(OnLightningStrike(*bolt_loc));
+        commands.trigger(OnMeteorStrike(*bolt_loc));
         let _ = level.bolts.pop_front();
         info!("Level has {} bolts remaining", level.bolts.len());
     }

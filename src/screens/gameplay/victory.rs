@@ -37,8 +37,8 @@ fn track_defeat_conditions(
     }
 }
 
-/// In story mode, victory is when there is no more fire and the last lightning
-/// bolt has been launched
+/// In story mode, victory is when there is no more fire and the last meteor
+/// has been launched
 fn track_victory_conditions(
     map: Res<GameMap>,
     level: Res<StoryModeLevel>,

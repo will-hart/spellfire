@@ -13,12 +13,12 @@ use bevy::{
     prelude::*,
 };
 
-mod lightning;
 mod map;
+mod meteor;
 mod wind;
 
-pub use lightning::OnLightningStrike;
 pub use map::{GOOD_SEEDS, GameMap};
+pub use meteor::{Fireball, MeteorAssets, OnMeteorStrike};
 pub use wind::WindDirection;
 
 pub fn plugin(app: &mut App) {
@@ -27,7 +27,7 @@ pub fn plugin(app: &mut App) {
     app.register_type::<TerrainCellState>();
     app.register_type::<TerrainType>();
 
-    app.add_plugins((map::plugin, lightning::plugin, wind::plugin));
+    app.add_plugins((map::plugin, meteor::plugin, wind::plugin));
     app.add_observer(spawn_map);
 }
 

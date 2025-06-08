@@ -5,6 +5,7 @@ use rand::Rng;
 
 use crate::{
     asset_tracking::LoadResource,
+    audio::music,
     screens::{
         BuildingMode, EndlessMode, NextStoryLevel, PlayerResources, RequiresCityHall, Screen,
         get_level_data,
@@ -30,7 +31,7 @@ impl FromWorld for LevelAssets {
     fn from_world(world: &mut World) -> Self {
         let assets = world.resource::<AssetServer>();
         Self {
-            music: assets.load("audio/music/caves-of-dawn-10376.ogg"),
+            music: assets.load("audio/music/spellfire_main_theme.ogg"),
         }
     }
 }
@@ -40,11 +41,12 @@ pub fn spawn_level(
     mut commands: Commands,
     endless_mode: Option<Res<EndlessMode>>,
     next_story_level: Res<NextStoryLevel>,
+    level_assets: Res<LevelAssets>,
     mut mode: ResMut<BuildingMode>,
     mut next_screen: ResMut<NextState<Screen>>,
 ) {
     let endless_mode = endless_mode.is_some();
-    commands.init_resource::<PlayerResources>();
+    commands.insert_resource(PlayerResources::default());
 
     if endless_mode {
         info!("Spawning random level ixn endless mode");
@@ -66,6 +68,15 @@ pub fn spawn_level(
         commands.insert_resource(level_data);
         commands.remove_resource::<RequiresCityHall>();
     }
+
+    commands.spawn((
+        Name::new("Soundtrack"),
+        StateScoped(Screen::Gameplay),
+        children![
+            Name::new("Gameplay music"),
+            music(level_assets.music.clone())
+        ],
+    ));
 }
 
 fn despawn_maps(mut commands: Commands, maps: Query<Entity, With<SpawnedMap>>) {
