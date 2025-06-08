@@ -7,7 +7,7 @@ use crate::{
     screens::{
         PlayerResources, Screen,
         gameplay::{
-            BuildingMode,
+            BuildingMode, MANA_FORGE_COST_LUMBER,
             building::{
                 BUILDING_FOOTPRINT_OFFSETS, BuildingAssets, BuildingLocation, BuildingType,
                 ManaLine, ParentBuilding, city_hall::CityHall,
@@ -49,7 +49,7 @@ fn spawn_mana_forge(
     parent_forge: Single<(Entity, &ParentBuilding)>,
     hall: Single<&Transform, With<CityHall>>,
 ) {
-    if resources.lumber < 50 {
+    if resources.lumber < MANA_FORGE_COST_LUMBER {
         warn!("Not enough lumber to place mana forge!");
         return;
     }

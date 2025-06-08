@@ -8,7 +8,7 @@ use crate::{
     screens::{
         PlayerResources, Screen,
         gameplay::{
-            BuildingMode,
+            BuildingMode, MINOTAUR_COST_MANA,
             building::{
                 BUILDING_FOOTPRINT_OFFSETS, BuildingAssets, BuildingLocation, BuildingType,
                 ManaLine, ManaLineBalls, ParentBuilding, mana_forge::ManaForge,
@@ -50,7 +50,7 @@ fn spawn_minotaur(
     parent_forge: Single<(Entity, &ParentBuilding)>,
     forges: Query<&Transform, With<ManaForge>>,
 ) {
-    if resources.mana < 30 {
+    if resources.mana < MINOTAUR_COST_MANA {
         warn!("Not enough resources to spawn minotaur");
         return;
     }

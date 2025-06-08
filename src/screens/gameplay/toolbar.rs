@@ -17,7 +17,8 @@ use crate::{
     screens::{
         BuildingMode, EndlessMode, PlayerResources, RequiresCityHall, Screen,
         gameplay::{
-            BuildTextHint, BuildTextMarker, HintMessage,
+            BuildTextHint, BuildTextMarker, HintMessage, LUMBER_MILL_COST_LUMBER,
+            MANA_FORGE_COST_LUMBER, MINOTAUR_COST_MANA, WATER_GOLEM_COST_MANA,
             building::{BuildingAssets, ResourceAssets},
         },
     },
@@ -496,7 +497,7 @@ fn toolbar_data(toolbar_type: ToolbarButtonType) -> (HintMessage, HintMessage) {
         ToolbarButtonType::MinotaurHutch => (
             HintMessage::BuildingData {
                 name: "Minotaur Hutch".into(),
-                cost: "40 Mana".into(),
+                cost: format!("{} Mana", MINOTAUR_COST_MANA),
                 details: "The minotaur inside consumes 1 mana / sec and turns trees into grass into dirt. Requires Mana Forge nearby.".into()
             },
             "Click the map to place a minotaur camp (close to a mana forge). Press <space> to cancel placement.".into()
@@ -510,8 +511,9 @@ fn toolbar_button_disabled(
 ) -> bool {
     match toolbar_type {
         ToolbarButtonType::Lightning => false,
-        ToolbarButtonType::LumberMill => resources.lumber < 30,
-        ToolbarButtonType::ManaForge => resources.lumber < 50,
-        ToolbarButtonType::MinotaurHutch => resources.mana < 40,
+        ToolbarButtonType::LumberMill => resources.lumber < LUMBER_MILL_COST_LUMBER,
+        ToolbarButtonType::ManaForge => resources.lumber < MANA_FORGE_COST_LUMBER,
+        ToolbarButtonType::MinotaurHutch => resources.mana < MINOTAUR_COST_MANA,
+        ToolbarButtonType::WaterGolem => resources.mana < WATER_GOLEM_COST_MANA,
     }
 }

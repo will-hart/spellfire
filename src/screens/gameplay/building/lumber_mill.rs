@@ -8,7 +8,7 @@ use crate::{
     screens::{
         PlayerResources, Screen,
         gameplay::{
-            BuildingMode,
+            BuildingMode, LUMBER_MILL_COST_LUMBER,
             building::{BuildingAssets, BuildingLocation, BuildingType},
         },
     },
@@ -45,7 +45,7 @@ fn spawn_lumber_mill(
     buildings: Res<BuildingAssets>,
     map: Res<GameMap>,
 ) {
-    if resources.lumber < 30 {
+    if resources.lumber < LUMBER_MILL_COST_LUMBER {
         warn!("Not enough resources to spawn lumber mill");
         return;
     }
