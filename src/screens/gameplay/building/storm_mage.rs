@@ -9,7 +9,8 @@ use crate::{
             BuildingMode, STORM_MAGE_COST_MANA,
             building::{
                 BUILDING_FOOTPRINT_OFFSETS, BuildingAssets, BuildingLocation, BuildingType,
-                ManaLine, ManaLineBalls, ParentBuilding, mana_forge::ManaForge,
+                ManaEntityLink, ManaLine, ManaLineBalls, TrackParentBuildingWhilePlacing,
+                mana_forge::ManaForge,
             },
         },
     },
@@ -60,7 +61,7 @@ fn spawn_storm_mage(
     mut building_mode: ResMut<BuildingMode>,
     buildings: Res<BuildingAssets>,
     mut map: ResMut<GameMap>,
-    parent_forge: Single<(Entity, &ParentBuilding)>,
+    parent_forge: Single<(Entity, &TrackParentBuildingWhilePlacing)>,
     forges: Query<&Transform, With<ManaForge>>,
 ) {
     if resources.mana < 30 {
@@ -95,31 +96,32 @@ fn spawn_storm_mage(
     let mut mage = StormMage::default();
     mage.apply_to_map(config.1, &mut map);
 
-    commands.entity(parent_forge).with_children(|builder| {
-        builder.spawn((
-            BuildingLocation(coords),
-            BuildingType::StormMage,
-            mage,
-            ManaLine {
-                from: parent_tx.translation.truncate().extend(0.05),
-                to: config.0.extend(0.05),
-                disabled: false,
-            },
-            ManaLineBalls::default(),
-            StateScoped(Screen::Gameplay),
-            Transform::from_xyz(
-                world_coords.x - parent_tx.translation.x,
-                world_coords.y - parent_tx.translation.y,
-                0.1,
-            ),
-            Visibility::Visible,
-            Sprite {
-                image: buildings.storm_mage.clone(),
-                custom_size: Some(Vec2::splat(16.0)),
-                anchor: Anchor::Center,
-                ..default()
-            },
-        ));
+    let mut cmds = commands.spawn((
+        BuildingLocation(coords),
+        BuildingType::StormMage,
+        mage,
+        ManaLine::new(
+            parent_tx.translation.truncate().extend(0.05),
+            config.0.extend(0.05),
+        ),
+        ManaLineBalls::default(),
+        StateScoped(Screen::Gameplay),
+        Transform::from_xyz(world_coords.x, world_coords.y, 0.1),
+        Visibility::Visible,
+        Sprite {
+            image: buildings.storm_mage.clone(),
+            custom_size: Some(Vec2::splat(16.0)),
+            anchor: Anchor::Center,
+            ..default()
+        },
+    ));
+
+    let new_id = cmds.id();
+
+    cmds.insert(ManaEntityLink {
+        from_entity: parent_forge,
+        to_entity: new_id,
+        destruction_time: None,
     });
 
     // update the map underneath to turn to buildings

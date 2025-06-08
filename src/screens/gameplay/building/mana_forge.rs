@@ -10,7 +10,7 @@ use crate::{
             BuildingMode, MANA_FORGE_COST_LUMBER,
             building::{
                 BUILDING_FOOTPRINT_OFFSETS, BuildingAssets, BuildingLocation, BuildingType,
-                ManaLine, ParentBuilding, city_hall::CityHall,
+                ManaLine, TrackParentBuildingWhilePlacing, city_hall::CityHall,
             },
         },
     },
@@ -46,7 +46,7 @@ fn spawn_mana_forge(
     mut building_mode: ResMut<BuildingMode>,
     buildings: Res<BuildingAssets>,
     mut map: ResMut<GameMap>,
-    parent_forge: Single<(Entity, &ParentBuilding)>,
+    parent_forge: Single<(Entity, &TrackParentBuildingWhilePlacing)>,
     hall: Single<&Transform, With<CityHall>>,
 ) {
     if resources.lumber < MANA_FORGE_COST_LUMBER {
@@ -75,11 +75,7 @@ fn spawn_mana_forge(
         BuildingLocation(coords),
         BuildingType::ManaForge,
         ManaForge::default(),
-        ManaLine {
-            from: hall.translation,
-            to: clamped_world_coords.extend(0.05),
-            disabled: false,
-        },
+        ManaLine::new(hall.translation, clamped_world_coords.extend(0.05)),
         StateScoped(Screen::Gameplay),
         Transform::from_translation(clamped_world_coords.extend(0.1)),
         Visibility::Visible,

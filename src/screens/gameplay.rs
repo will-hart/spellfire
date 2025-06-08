@@ -9,8 +9,8 @@ use crate::{
     screens::{
         Screen,
         gameplay::building::{
-            BuildingAssets, MageRotation, ManaLine, ParentBuilding, SpawnCityHall, SpawnLumberMill,
-            SpawnManaForge, SpawnMinotaur, SpawnStormMage, SpawnWaterGolem,
+            BuildingAssets, MageRotation, ManaLine, SpawnCityHall, SpawnLumberMill, SpawnManaForge,
+            SpawnMinotaur, SpawnStormMage, SpawnWaterGolem, TrackParentBuildingWhilePlacing,
         },
     },
     wildfire::{GameMap, OnLightningStrike},
@@ -269,7 +269,7 @@ fn close_menu(mut next_menu: ResMut<NextState<Menu>>) {
 fn cancel_cursor_mode(
     mut commands: Commands,
     mut mode: ResMut<BuildingMode>,
-    forge_placements: Query<Entity, With<ParentBuilding>>,
+    forge_placements: Query<Entity, With<TrackParentBuildingWhilePlacing>>,
 ) {
     info!("Resetting cursor mode");
     *mode = BuildingMode::None;
@@ -338,14 +338,10 @@ fn handle_build_mode_changing(
         BuildingMode::PlaceManaForge => {
             info!("Spawning building mode items for mana forge placement");
             commands.spawn((
-                ParentBuilding::new(BuildingType::ManaForge),
+                TrackParentBuildingWhilePlacing::new(BuildingType::ManaForge),
                 CursorModeItem,
                 CursorModeFollower,
-                ManaLine {
-                    from: Vec3::ZERO,
-                    to: Vec3::ZERO,
-                    disabled: true,
-                },
+                ManaLine::new(Vec3::ZERO, Vec3::ZERO),
                 Sprite {
                     image: building_assets.mana_forge.clone(),
                     ..default()
@@ -357,14 +353,10 @@ fn handle_build_mode_changing(
         | next_mode @ BuildingMode::PlaceStormMage => {
             info!("Spawning building mode items for {mode:?} placement");
             commands.spawn((
-                ParentBuilding::new(next_mode.into()),
+                TrackParentBuildingWhilePlacing::new(next_mode.into()),
                 CursorModeItem,
                 CursorModeFollower,
-                ManaLine {
-                    from: Vec3::ZERO,
-                    to: Vec3::ZERO,
-                    disabled: true,
-                },
+                ManaLine::new(Vec3::ZERO, Vec3::ZERO),
                 Sprite {
                     image: match next_mode {
                         BuildingMode::PlaceMinotaur => building_assets.minotaur.clone(),

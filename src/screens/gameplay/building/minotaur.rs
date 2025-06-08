@@ -11,7 +11,8 @@ use crate::{
             BuildingMode, MINOTAUR_COST_MANA,
             building::{
                 BUILDING_FOOTPRINT_OFFSETS, BuildingAssets, BuildingLocation, BuildingType,
-                ManaLine, ManaLineBalls, ParentBuilding, mana_forge::ManaForge,
+                ManaEntityLink, ManaLine, ManaLineBalls, TrackParentBuildingWhilePlacing,
+                mana_forge::ManaForge,
             },
         },
     },
@@ -47,7 +48,7 @@ fn spawn_minotaur(
     mut building_mode: ResMut<BuildingMode>,
     buildings: Res<BuildingAssets>,
     mut map: ResMut<GameMap>,
-    parent_forge: Single<(Entity, &ParentBuilding)>,
+    parent_forge: Single<(Entity, &TrackParentBuildingWhilePlacing)>,
     forges: Query<&Transform, With<ManaForge>>,
 ) {
     if resources.mana < MINOTAUR_COST_MANA {
@@ -79,31 +80,31 @@ fn spawn_minotaur(
         return;
     };
 
-    commands.entity(parent_forge).with_children(|builder| {
-        builder.spawn((
-            BuildingLocation(coords),
-            BuildingType::Minotaur,
-            Minotaur::default(),
-            ManaLine {
-                from: parent_tx.translation.truncate().extend(0.05),
-                to: config.0.extend(0.05),
-                disabled: false,
-            },
-            ManaLineBalls::default(),
-            StateScoped(Screen::Gameplay),
-            Transform::from_xyz(
-                world_coords.x - parent_tx.translation.x,
-                world_coords.y - parent_tx.translation.y,
-                0.1,
-            ),
-            Visibility::Visible,
-            Sprite {
-                image: buildings.minotaur.clone(),
-                custom_size: Some(Vec2::splat(16.0)),
-                anchor: Anchor::Center,
-                ..default()
-            },
-        ));
+    let mut cmds = commands.spawn((
+        BuildingLocation(coords),
+        BuildingType::Minotaur,
+        Minotaur::default(),
+        ManaLine::new(
+            parent_tx.translation.truncate().extend(0.05),
+            config.0.extend(0.05),
+        ),
+        ManaLineBalls::default(),
+        StateScoped(Screen::Gameplay),
+        Transform::from_xyz(world_coords.x, world_coords.y, 0.1),
+        Visibility::Visible,
+        Sprite {
+            image: buildings.minotaur.clone(),
+            custom_size: Some(Vec2::splat(16.0)),
+            anchor: Anchor::Center,
+            ..default()
+        },
+    ));
+    let new_id = cmds.id();
+
+    cmds.insert(ManaEntityLink {
+        from_entity: parent_forge,
+        to_entity: new_id,
+        destruction_time: None,
     });
 
     // update the map underneath to turn to buildings
