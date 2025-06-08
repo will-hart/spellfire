@@ -1,6 +1,10 @@
 //! The screen state for the main gameplay.
 
-use bevy::{input::common_conditions::input_just_pressed, prelude::*, ui::Val::*};
+use bevy::{
+    input::common_conditions::{input_just_pressed, input_pressed},
+    prelude::*,
+    ui::Val::*,
+};
 
 use crate::{
     Pause,
@@ -88,6 +92,21 @@ pub(super) fn plugin(app: &mut App) {
             .chain()
             .run_if(in_state(Screen::Gameplay).and(in_state(Pause(false)))),
     );
+
+    app.add_systems(
+        Update,
+        cheat.run_if(
+            input_just_pressed(KeyCode::KeyC)
+                .and(input_pressed(KeyCode::ControlLeft))
+                .and(input_pressed(KeyCode::ShiftLeft))
+                .and(resource_exists::<PlayerResources>),
+        ),
+    );
+}
+
+fn cheat(mut resources: ResMut<PlayerResources>) {
+    resources.mana += 100;
+    resources.lumber += 100;
 }
 
 #[derive(Resource, Reflect, Debug, Clone, Default)]
