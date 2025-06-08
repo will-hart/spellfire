@@ -80,7 +80,7 @@ Probably out of scope for jam
 
 Bugs
 
-1. - [ ] Storm mage doesn't seem to work?
+- [x] Storm mage doesn't seem to work?
 - [x] Resources don't reset when hitting "M" for new endless mode map
 - [x] can place buildings off the map
 - [x] Minotaur right on the edge of the map has out of bounds issue when moving

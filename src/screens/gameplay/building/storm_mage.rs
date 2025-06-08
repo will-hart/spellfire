@@ -25,7 +25,7 @@ pub(super) fn plugin(app: &mut App) {
 fn remove_storm_mage(
     trigger: Trigger<OnDespawn, StormMage>,
     map: Option<ResMut<GameMap>>,
-    mages: Query<&StormMage>,
+    mages: Query<(&BuildingLocation, &StormMage)>,
 ) {
     let Some(mut map) = map else {
         warn!("Unable to remove mage, no game map exists");
@@ -33,7 +33,7 @@ fn remove_storm_mage(
     };
 
     let target = trigger.target();
-    let Ok(mage) = mages.get(target) else {
+    let Ok((loc, mage)) = mages.get(target) else {
         error!(
             "Unable to find mage being removed, aborting `remove_storm_mage`. The map will be out of date."
         );
@@ -41,8 +41,8 @@ fn remove_storm_mage(
     };
 
     for coord in &mage.cells {
-        let Some(cell) = map.get_mut(*coord) else {
-            warn!("NO cell found for storm mage");
+        let Some(cell) = map.get_mut(*coord + loc.0) else {
+            warn!("No cell found for storm mage");
             continue;
         };
 
@@ -99,7 +99,7 @@ fn spawn_storm_mage(
     };
 
     let mut mage = StormMage::default();
-    mage.apply_to_map(config.1, &mut map);
+    mage.apply_to_map(coords, config.1, &mut map);
 
     commands.spawn((
         BuildingLocation(coords),
@@ -193,9 +193,9 @@ impl StormMage {
     }
 
     /// applies the effects of the storm mage to the map
-    pub fn apply_to_map(&mut self, rotation: MageRotation, map: &mut GameMap) {
+    pub fn apply_to_map(&mut self, mage_cell: IVec2, rotation: MageRotation, map: &mut GameMap) {
         for cell in Self::get_relevant_cells(rotation, self.range) {
-            let Some(map_cell) = map.get_mut(cell) else {
+            let Some(map_cell) = map.get_mut(cell + mage_cell) else {
                 warn!("Unable to locate cell in map, skipping wind from storm mage");
                 continue;
             };
