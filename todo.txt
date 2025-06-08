@@ -31,19 +31,20 @@ Fire sim
 
 8. Juice
 
-- [ ] Building destruction
+- [x] Building destruction
   - [x] fireballs on mana forge detonation
   - [x] animated power surge to child buildings through mana lines "sorta"
-  - [ ] audio on building explode
+  - [x] audio on building explode
 - [x] Better audio
   - [x] audio on lightning bolts hitting
   - [x] audio on lightning bolts launched
+  - [x] defeat audio
 - [x] swap lightning bolts in story mode for flaming meteors
 - [x] animated connection to child buildings
 
 Polish
 
-7.- [ ] BALANCE
+1.- [ ] BALANCE
   - [x] if you sequence buildings incorrectly you can get stuck (i.e. not enough for a lumber mill, not enough mana)
         potential solution - set initial lumber to low enough that you can't buy a mana forge? or maybe enough for one of each
   - [ ] wind can make story mode too easy / too hard (should be controlled by scenario?)
@@ -53,7 +54,6 @@ Polish
   - [x] water golem
 6.- [ ] More scenarios
 - [x] In story mode - zoom to city hall at the start of the game
-9. - [ ] show wind vane in the UI rather than text
 - [x] is wind even working?
 - [x] menu rejig
   - [x] tutorial on the main page
@@ -67,6 +67,7 @@ Polish
 
 Probably out of scope for jam
 
+- [ ] show wind vane in the UI rather than text
 - [ ] main menu - show a fire in the background or something a bit more interesting
 - [ ] redraw map without respawning sprites (see map::redraw_map system) - possibly use a texture?
 - [ ] fast forward / time acceleration

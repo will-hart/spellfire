@@ -2,14 +2,25 @@
 
 use bevy::prelude::*;
 
+use crate::asset_tracking::LoadResource;
+use crate::audio::sound_effect;
 use crate::screens::{EndlessMode, Screen};
 use crate::theme::widget;
 
 pub(super) fn plugin(app: &mut App) {
+    app.register_type::<GameOverAssets>();
+    app.load_resource::<GameOverAssets>();
+
     app.add_systems(OnEnter(Screen::GameOver), spawn_game_over_screen);
 }
 
-fn spawn_game_over_screen(mut commands: Commands, maybe_endless_mode: Option<Res<EndlessMode>>) {
+fn spawn_game_over_screen(
+    mut commands: Commands,
+    maybe_endless_mode: Option<Res<EndlessMode>>,
+    game_over_assets: Res<GameOverAssets>,
+) {
+    commands.spawn(sound_effect(game_over_assets.defeated.clone()));
+
     commands
         .spawn((
             widget::ui_root("Game Over Menu"),
@@ -38,4 +49,20 @@ fn spawn_game_over_screen(mut commands: Commands, maybe_endless_mode: Option<Res
                 },
             ));
         });
+}
+
+#[derive(Resource, Asset, Clone, Reflect)]
+#[reflect(Resource)]
+pub struct GameOverAssets {
+    #[dependency]
+    defeated: Handle<AudioSource>,
+}
+
+impl FromWorld for GameOverAssets {
+    fn from_world(world: &mut World) -> Self {
+        let assets = world.resource::<AssetServer>();
+        Self {
+            defeated: assets.load("audio/sound_effects/you_are_defeated.ogg"),
+        }
+    }
 }

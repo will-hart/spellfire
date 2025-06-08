@@ -7,11 +7,12 @@ use rand::Rng;
 
 use crate::{
     Pause,
+    audio::sound_effect,
     screens::{
         BuildingType, PlayerResources, Screen,
         gameplay::{
             BuildTextHint,
-            building::{BuildingLocation, ManaEntityLink, ManaLine},
+            building::{BuildingAssets, BuildingLocation, ManaEntityLink, ManaLine},
         },
     },
     wildfire::{Fireball, GameMap, MeteorAssets, TerrainType},
@@ -46,6 +47,7 @@ pub struct BuildingMarkedForDestruction {
 fn burn_buildings(
     mut commands: Commands,
     meteor_assets: Res<MeteorAssets>,
+    building_assets: Res<BuildingAssets>,
     mut map: ResMut<GameMap>,
     buildings: Query<
         (Entity, &BuildingLocation, &BuildingType),
@@ -64,6 +66,10 @@ fn burn_buildings(
             // currently despawns child buildings of a mana forge too due to
             // hierarchy.
             info!("{building_type:?} at {loc:?} destroyed by fire");
+            if *building_type != BuildingType::CityHall {
+                commands.spawn(sound_effect(building_assets.building_lost.clone()));
+            }
+
             commands
                 .entity(destroyed_entity)
                 .insert(BuildingMarkedForDestruction {

@@ -138,6 +138,8 @@ pub struct BuildingAssets {
     pub storm_mage: Handle<Image>,
     #[dependency]
     pub water_golem: Handle<Image>,
+    #[dependency]
+    pub building_lost: Handle<AudioSource>,
 }
 
 impl FromWorld for BuildingAssets {
@@ -194,6 +196,7 @@ impl FromWorld for BuildingAssets {
                     settings.sampler = ImageSampler::nearest();
                 },
             ),
+            building_lost: assets.load("audio/sound_effects/building_lost.ogg"),
         }
     }
 }
