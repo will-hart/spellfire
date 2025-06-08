@@ -41,6 +41,7 @@ Juice
 
 Polish
 
+- [ ] In story mode - zoom to city hall at the start of the game
 - [ ] menu rejig
   - [ ] show a fire in the background or something a bit more interesting
   - [ ] tutorial on the main page
