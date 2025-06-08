@@ -302,7 +302,6 @@ fn track_building_parent_while_placing(
         .first()
         .map(|(e, _, target_location)| (*e, *target_location));
 
-    if matches!(parent.building_type, BuildingType::ManaForge) {}
     let Some((closest_forge, tx)) = closest else {
         parent.entity = None;
         parent_mana_line.disabled = true;

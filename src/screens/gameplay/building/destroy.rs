@@ -3,7 +3,9 @@
 use std::time::Duration;
 
 use bevy::{
-    ecs::world::OnDespawn, platform::collections::HashSet, prelude::*,
+    ecs::world::OnDespawn,
+    platform::collections::{HashMap, HashSet},
+    prelude::*,
     time::common_conditions::on_timer,
 };
 use rand::Rng;
@@ -49,9 +51,8 @@ pub struct BuildingMarkedForDestruction {
 /// Burns buildings that are consumed by fire
 fn burn_buildings(
     mut commands: Commands,
-    meteor_assets: Res<MeteorAssets>,
     building_assets: Res<BuildingAssets>,
-    mut map: ResMut<GameMap>,
+    map: ResMut<GameMap>,
     buildings: Query<
         (Entity, &BuildingLocation, &BuildingType),
         Without<BuildingMarkedForDestruction>,
@@ -69,49 +70,20 @@ fn burn_buildings(
             // currently despawns child buildings of a mana forge too due to
             // hierarchy.
             info!("{building_type:?} at {loc:?} destroyed by fire");
-            if *building_type != BuildingType::CityHall {
-                commands.spawn(sound_effect(building_assets.building_lost.clone()));
+            if *building_type == BuildingType::CityHall {
+                commands.entity(destroyed_entity).despawn();
+                return;
             }
 
-            commands
-                .entity(destroyed_entity)
-                .insert(BuildingMarkedForDestruction {
-                    time_until_boom: 1.0,
-                });
-
-            if *building_type == BuildingType::ManaForge {
-                // spawn fires around
-                let mut rng = rand::thread_rng();
-                let num_fires = rng.gen_range(2..=6);
-                info!("Spawning {num_fires} other fires");
-
-                for _ in 0..num_fires {
-                    let fire_tile_coords =
-                        loc.0 + IVec2::new(rng.gen_range(-14..=14), rng.gen_range(-14..14));
-
-                    commands.spawn((
-                        Fireball {
-                            target_world_pos: map.world_coords(fire_tile_coords),
-                        },
-                        Transform::from_translation(map.world_coords(loc.0).extend(0.5)),
-                        Sprite {
-                            image: meteor_assets.fireball.clone(),
-                            ..Default::default()
-                        },
-                    ));
-
-                    if let Some(cell) = map.get_mut(fire_tile_coords) {
-                        cell.terrain = TerrainType::Fire;
-                        cell.mark_dirty();
-                    }
-                }
-            }
+            commands.spawn(sound_effect(building_assets.building_lost.clone()));
 
             // check if there are any children that need to be destroyed
             // lots of looping iteration here but I guess it happens infrequently
             // and its too late to think of a better way.
             let mut entities_to_boom = HashSet::<Entity>::from_iter([destroyed_entity]);
+            let mut boom_times = HashMap::<Entity, f32>::from_iter([(destroyed_entity, 1.0)]);
             let mut made_changes = true;
+            let mut boom_time = 2.0;
 
             while made_changes {
                 made_changes = false;
@@ -122,9 +94,12 @@ fn burn_buildings(
                     {
                         info!("Queuing {} for destruction", target_entity);
                         entities_to_boom.insert(target_entity);
+                        boom_times.insert(target_entity, boom_time);
                         made_changes = true;
                     }
                 }
+
+                boom_time += 1.0;
             }
 
             // loop through yet again and do the actual state changes aka the booming
@@ -133,7 +108,7 @@ fn burn_buildings(
                     commands
                         .entity(target_entity)
                         .insert(BuildingMarkedForDestruction {
-                            time_until_boom: 1.5,
+                            time_until_boom: *boom_times.get(&target_entity).unwrap_or(&2.0),
                         });
 
                     if let Some(mut line) = maybe_line {
@@ -162,17 +137,24 @@ fn destroy_marked_buildings(
 
 fn handle_despawned_buildings(
     trigger: Trigger<OnDespawn, BuildingType>,
+    mut commands: Commands,
+    meteor_assets: Res<MeteorAssets>,
     resources: Option<ResMut<PlayerResources>>,
+    map: Option<ResMut<GameMap>>,
     mut hint: ResMut<BuildTextHint>,
-    buildings: Query<&BuildingType>,
+    buildings: Query<(&BuildingType, &BuildingLocation)>,
 ) {
     let Some(mut resources) = resources else {
         // probably because we're exiting the game or to menu
         return;
     };
 
+    let Some(mut map) = map else {
+        return;
+    };
+
     let target = trigger.target();
-    let Ok(building_type) = buildings.get(target) else {
+    let Ok((building_type, loc)) = buildings.get(target) else {
         warn!("Unable to find building to handle despawn");
         return;
     };
@@ -183,6 +165,32 @@ fn handle_despawned_buildings(
         }
         BuildingType::ManaForge => {
             resources.mana_drain -= 3;
+
+            // spawn some chain reaction fire balls
+            let mut rng = rand::thread_rng();
+            let num_fires = rng.gen_range(2..=6);
+            info!("Spawning {num_fires} other fires");
+
+            for _ in 0..num_fires {
+                let fire_tile_coords =
+                    loc.0 + IVec2::new(rng.gen_range(-14..=14), rng.gen_range(-14..14));
+
+                commands.spawn((
+                    Fireball {
+                        target_world_pos: map.world_coords(fire_tile_coords),
+                    },
+                    Transform::from_translation(map.world_coords(loc.0).extend(0.5)),
+                    Sprite {
+                        image: meteor_assets.fireball.clone(),
+                        ..Default::default()
+                    },
+                ));
+
+                if let Some(cell) = map.get_mut(fire_tile_coords) {
+                    cell.terrain = TerrainType::Fire;
+                    cell.mark_dirty();
+                }
+            }
         }
         BuildingType::StormMage => {
             resources.mana_drain -= 2;

@@ -9,6 +9,7 @@ Basic gameplay
 
 Building placement
 
+- [ ] hot keys for building placement
 - [x] forges can link to other forges to make chains
 - [x] disable invalid buttons (i.e. not enough resources)
 - [x] add lumber mill building type
@@ -19,7 +20,7 @@ Building placement
 
 Missions and Victory conditions
 
-- [ ] chains of forges blowing up also trigger fireballs
+- [x] chains of forges blowing up also trigger fireballs
 - [x] chains of forges can blow up
 - [x] add city to defend - chain of mana forges from this building
   - [x] add building and spawning / destruction logic
