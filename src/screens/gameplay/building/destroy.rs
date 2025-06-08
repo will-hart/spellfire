@@ -176,6 +176,7 @@ fn handle_despawned_buildings(
                     loc.0 + IVec2::new(rng.gen_range(-14..=14), rng.gen_range(-14..14));
 
                 commands.spawn((
+                    StateScoped(Screen::Gameplay),
                     Fireball {
                         target_world_pos: map.world_coords(fire_tile_coords),
                     },
