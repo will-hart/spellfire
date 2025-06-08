@@ -4,8 +4,9 @@
 use bevy::{prelude::*, sprite::Anchor};
 
 use crate::{
+    MainCamera,
     screens::{
-        Screen,
+        EndlessMode, Screen,
         gameplay::{
             BuildingMode, OnRedrawToolbar,
             building::{
@@ -37,15 +38,18 @@ impl Command for SpawnCityHall {
 fn spawn_city_hall(
     In(config): In<SpawnCityHall>,
     mut commands: Commands,
-    mut building_mode: ResMut<BuildingMode>,
+    maybe_endless_mode: Option<Res<EndlessMode>>,
     buildings: Res<BuildingAssets>,
+    mut building_mode: ResMut<BuildingMode>,
     mut map: ResMut<GameMap>,
     existing_city_halls: Query<Entity, With<CityHall>>,
+    mut camera: Single<&mut Transform, With<MainCamera>>,
 ) {
     if !existing_city_halls.is_empty() {
         warn!("There can only be one city hall! Aborting placement");
         return;
     }
+
     let coords = map.tile_coords(config.0);
     if !map.is_valid_coords(coords) {
         warn!("Invalid coordinates for city hall, skipping placement");
@@ -99,6 +103,12 @@ fn spawn_city_hall(
     *building_mode = BuildingMode::None;
     commands.remove_resource::<RequiresCityHall>();
     commands.trigger(OnRedrawToolbar);
+
+    // moving camera to focus on the city hall in story mode
+    if maybe_endless_mode.is_none() {
+        info!("Moving camera to look at city hall");
+        camera.translation = clamped_world_coords.extend(0.0);
+    }
 }
 
 /// A mana producing building
