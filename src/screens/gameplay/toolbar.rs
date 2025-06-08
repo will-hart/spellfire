@@ -6,6 +6,7 @@ use std::time::Duration;
 use bevy::{
     color::palettes::tailwind::{SLATE_400, SLATE_700, SLATE_800, SLATE_950},
     ecs::relationship::RelatedSpawnerCommands,
+    input::common_conditions::input_just_pressed,
     prelude::*,
     time::common_conditions::on_timer,
 };
@@ -52,6 +53,61 @@ pub(super) fn plugin(app: &mut App) {
 
     app.add_observer(handle_on_redraw_toolbar)
         .add_observer(handle_disabling_toolbar_buttons);
+
+    app.add_systems(
+        Update,
+        (
+            meteor_hotkey.run_if(input_just_pressed(KeyCode::Digit0)),
+            mana_forge_hotkey.run_if(input_just_pressed(KeyCode::Digit1)),
+            lumber_mill_hotkey.run_if(input_just_pressed(KeyCode::Digit2)),
+            minotaur_hotkey.run_if(input_just_pressed(KeyCode::Digit3)),
+            water_golem_hotkey.run_if(input_just_pressed(KeyCode::Digit4)),
+            storm_mage_hotkey.run_if(input_just_pressed(KeyCode::Digit5)),
+        )
+            .run_if(in_state(Screen::Gameplay).and(in_state(Pause(false)))),
+    );
+}
+
+fn meteor_hotkey(mut mode: ResMut<BuildingMode>, mut hint: ResMut<BuildTextHint>) {
+    if *mode == BuildingMode::None {
+        *mode = BuildingMode::Meteor;
+        hint.0 = toolbar_data(ToolbarButtonType::Meteor).1;
+    }
+}
+
+fn mana_forge_hotkey(mut mode: ResMut<BuildingMode>, mut hint: ResMut<BuildTextHint>) {
+    if *mode == BuildingMode::None {
+        *mode = BuildingMode::PlaceManaForge;
+        hint.0 = toolbar_data(ToolbarButtonType::ManaForge).1;
+    }
+}
+
+fn lumber_mill_hotkey(mut mode: ResMut<BuildingMode>, mut hint: ResMut<BuildTextHint>) {
+    if *mode == BuildingMode::None {
+        *mode = BuildingMode::PlaceLumberMill;
+        hint.0 = toolbar_data(ToolbarButtonType::LumberMill).1;
+    }
+}
+
+fn minotaur_hotkey(mut mode: ResMut<BuildingMode>, mut hint: ResMut<BuildTextHint>) {
+    if *mode == BuildingMode::None {
+        *mode = BuildingMode::PlaceMinotaur;
+        hint.0 = toolbar_data(ToolbarButtonType::MinotaurHutch).1;
+    }
+}
+
+fn water_golem_hotkey(mut mode: ResMut<BuildingMode>, mut hint: ResMut<BuildTextHint>) {
+    if *mode == BuildingMode::None {
+        *mode = BuildingMode::PlaceWaterGolem;
+        hint.0 = toolbar_data(ToolbarButtonType::WaterGolem).1;
+    }
+}
+
+fn storm_mage_hotkey(mut mode: ResMut<BuildingMode>, mut hint: ResMut<BuildTextHint>) {
+    if *mode == BuildingMode::None {
+        *mode = BuildingMode::PlaceStormMage;
+        hint.0 = toolbar_data(ToolbarButtonType::StormMage).1;
+    }
 }
 
 #[derive(Component, Reflect, Debug, Clone, Copy)]
@@ -223,15 +279,13 @@ fn _toolbar_buttons(
     #[cfg(not(debug_assertions))]
     let show_bolt_in_story = false;
 
-    if in_endless_mode || show_bolt_in_story {
-        toolbar_button(
-            toolbar,
-            "Meteor",
-            BuildingMode::Meteor,
-            building_assets.meteor.clone(),
-            ToolbarButtonType::Meteor,
-        );
-    }
+    toolbar_button(
+        toolbar,
+        "Forge",
+        BuildingMode::PlaceManaForge,
+        building_assets.mana_forge.clone(),
+        ToolbarButtonType::ManaForge,
+    );
 
     toolbar_button(
         toolbar,
@@ -239,14 +293,6 @@ fn _toolbar_buttons(
         BuildingMode::PlaceLumberMill,
         building_assets.lumber_mill.clone(),
         ToolbarButtonType::LumberMill,
-    );
-
-    toolbar_button(
-        toolbar,
-        "Forge",
-        BuildingMode::PlaceManaForge,
-        building_assets.mana_forge.clone(),
-        ToolbarButtonType::ManaForge,
     );
 
     toolbar_button(
@@ -259,19 +305,29 @@ fn _toolbar_buttons(
 
     toolbar_button(
         toolbar,
+        "Water Golem",
+        BuildingMode::PlaceWaterGolem,
+        building_assets.water_golem.clone(),
+        ToolbarButtonType::WaterGolem,
+    );
+
+    toolbar_button(
+        toolbar,
         "Storm Mage",
         BuildingMode::PlaceStormMage,
         building_assets.storm_mage.clone(),
         ToolbarButtonType::StormMage,
     );
 
-    toolbar_button(
-        toolbar,
-        "Water Golem",
-        BuildingMode::PlaceWaterGolem,
-        building_assets.water_golem.clone(),
-        ToolbarButtonType::WaterGolem,
-    );
+    if in_endless_mode || show_bolt_in_story {
+        toolbar_button(
+            toolbar,
+            "Meteor",
+            BuildingMode::Meteor,
+            building_assets.meteor.clone(),
+            ToolbarButtonType::Meteor,
+        );
+    }
 }
 
 fn spawn_toolbar(

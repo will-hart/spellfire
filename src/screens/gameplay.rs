@@ -119,7 +119,7 @@ impl Default for PlayerResources {
 #[reflect(Resource)]
 pub struct StormMagePlacementRotation(pub MageRotation);
 
-#[derive(Resource, Reflect, Debug, Clone, Copy, Default)]
+#[derive(Resource, Reflect, Debug, Clone, Copy, Default, PartialEq, Eq)]
 #[reflect(Resource)]
 pub enum BuildingMode {
     #[default]

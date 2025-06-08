@@ -9,6 +9,7 @@ Basic gameplay
 
 Building placement
 
+- [x] forges can link to other forges to make chains
 - [x] disable invalid buttons (i.e. not enough resources)
 - [x] add lumber mill building type
 - [x] child buildings get hurt by fire
@@ -18,6 +19,8 @@ Building placement
 
 Missions and Victory conditions
 
+- [x] chains of forges blowing up also trigger fireballs
+- [x] chains of forges can blow up
 - [x] add city to defend - chain of mana forges from this building
   - [x] add building and spawning / destruction logic
   - [x] add rules for placing building at start of endless
@@ -29,7 +32,7 @@ Fire sim
 
 - [x] slow it all down, using moisture but with more fuel
 
-8. Juice
+Juice
 
 - [x] Building destruction
   - [x] fireballs on mana forge detonation
@@ -44,16 +47,17 @@ Fire sim
 
 Polish
 
-1.- [ ] BALANCE
-  - [x] if you sequence buildings incorrectly you can get stuck (i.e. not enough for a lumber mill, not enough mana)
-        potential solution - set initial lumber to low enough that you can't buy a mana forge? or maybe enough for one of each
+2.- [ ] BALANCE
   - [ ] wind can make story mode too easy / too hard (should be controlled by scenario?)
   - [ ] Make scenarios balanced and winnable in a few different ways
-- [ ] more building types
+  - [x] if you sequence buildings incorrectly you can get stuck (i.e. not enough for a lumber mill, not enough mana)
+        potential solution - set initial lumber to low enough that you can't buy a mana forge? or maybe enough for one of each
+- [x] more building types
   - [x] wind mage
   - [x] water golem
-6.- [ ] More scenarios
+3.- [ ] More scenarios
 - [x] In story mode - zoom to city hall at the start of the game
+- [x] hot keys for building placement
 - [x] is wind even working?
 - [x] menu rejig
   - [x] tutorial on the main page
@@ -76,7 +80,7 @@ Probably out of scope for jam
 
 Bugs
 
-- [ ] Storm mage doesn't seem to work?
+- [x] Storm mage doesn't seem to work?
 - [x] Resources don't reset when hitting "M" for new endless mode map
 - [x] can place buildings off the map
 - [x] Minotaur right on the edge of the map has out of bounds issue when moving

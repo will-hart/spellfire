@@ -10,7 +10,7 @@ use crate::{
             BuildingMode, MANA_FORGE_COST_LUMBER,
             building::{
                 BUILDING_FOOTPRINT_OFFSETS, BuildingAssets, BuildingLocation, BuildingType,
-                ManaLine, TrackParentBuildingWhilePlacing, city_hall::CityHall,
+                ManaEntityLink, ManaLine, TrackParentBuildingWhilePlacing,
             },
         },
     },
@@ -47,15 +47,20 @@ fn spawn_mana_forge(
     buildings: Res<BuildingAssets>,
     mut map: ResMut<GameMap>,
     parent_forge: Single<(Entity, &TrackParentBuildingWhilePlacing)>,
-    hall: Single<&Transform, With<CityHall>>,
+    parents: Query<&Transform, With<BuildingType>>,
 ) {
     if resources.lumber < MANA_FORGE_COST_LUMBER {
         warn!("Not enough lumber to place mana forge!");
         return;
     }
 
-    let Some(_) = parent_forge.1.entity else {
-        warn!("No parent city hall, aborting mana forge placement");
+    let Some(parent_entity) = parent_forge.1.entity else {
+        warn!("No parent selected, aborting mana forge placement");
+        return;
+    };
+
+    let Ok(parent_tx) = parents.get(parent_entity) else {
+        warn!("Unable to find parent transform, aborting mana forge placement");
         return;
     };
 
@@ -75,7 +80,11 @@ fn spawn_mana_forge(
         BuildingLocation(coords),
         BuildingType::ManaForge,
         ManaForge::default(),
-        ManaLine::new(hall.translation, clamped_world_coords.extend(0.05)),
+        ManaLine::new(parent_tx.translation, clamped_world_coords.extend(0.05)),
+        ManaEntityLink {
+            from_entity: parent_entity,
+            destruction_time: None,
+        },
         StateScoped(Screen::Gameplay),
         Transform::from_translation(clamped_world_coords.extend(0.1)),
         Visibility::Visible,

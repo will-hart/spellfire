@@ -80,7 +80,7 @@ fn spawn_minotaur(
         return;
     };
 
-    let mut cmds = commands.spawn((
+    commands.spawn((
         BuildingLocation(coords),
         BuildingType::Minotaur,
         Minotaur::default(),
@@ -89,6 +89,10 @@ fn spawn_minotaur(
             config.0.extend(0.05),
         ),
         ManaLineBalls::default(),
+        ManaEntityLink {
+            from_entity: parent_forge,
+            destruction_time: None,
+        },
         StateScoped(Screen::Gameplay),
         Transform::from_xyz(world_coords.x, world_coords.y, 0.1),
         Visibility::Visible,
@@ -99,13 +103,6 @@ fn spawn_minotaur(
             ..default()
         },
     ));
-    let new_id = cmds.id();
-
-    cmds.insert(ManaEntityLink {
-        from_entity: parent_forge,
-        to_entity: new_id,
-        destruction_time: None,
-    });
 
     // update the map underneath to turn to buildings
     BUILDING_FOOTPRINT_OFFSETS.iter().for_each(|offset| {
