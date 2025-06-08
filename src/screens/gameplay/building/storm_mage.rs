@@ -24,9 +24,14 @@ pub(super) fn plugin(app: &mut App) {
 
 fn remove_storm_mage(
     trigger: Trigger<OnDespawn, StormMage>,
-    mut map: ResMut<GameMap>,
+    map: Option<ResMut<GameMap>>,
     mages: Query<&StormMage>,
 ) {
+    let Some(mut map) = map else {
+        warn!("Unable to remove mage, no game map exists");
+        return;
+    };
+
     let target = trigger.target();
     let Ok(mage) = mages.get(target) else {
         error!(
@@ -96,7 +101,7 @@ fn spawn_storm_mage(
     let mut mage = StormMage::default();
     mage.apply_to_map(config.1, &mut map);
 
-    let mut cmds = commands.spawn((
+    commands.spawn((
         BuildingLocation(coords),
         BuildingType::StormMage,
         mage,
@@ -105,6 +110,10 @@ fn spawn_storm_mage(
             config.0.extend(0.05),
         ),
         ManaLineBalls::default(),
+        ManaEntityLink {
+            from_entity: parent_forge,
+            destruction_time: None,
+        },
         StateScoped(Screen::Gameplay),
         Transform::from_xyz(world_coords.x, world_coords.y, 0.1),
         Visibility::Visible,
@@ -115,14 +124,6 @@ fn spawn_storm_mage(
             ..default()
         },
     ));
-
-    let new_id = cmds.id();
-
-    cmds.insert(ManaEntityLink {
-        from_entity: parent_forge,
-        to_entity: new_id,
-        destruction_time: None,
-    });
 
     // update the map underneath to turn to buildings
     BUILDING_FOOTPRINT_OFFSETS.iter().for_each(|offset| {

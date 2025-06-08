@@ -56,7 +56,7 @@ fn spawn_water_golem(
         return;
     }
 
-    let (parent_forge_entity, parent_forge) = *parent_forge;
+    let (parent_tracking_entity, parent_forge) = *parent_forge;
     let Some(parent_forge) = parent_forge.entity else {
         warn!("No parent mana forge inside tracking, skipping water golem placement");
         return;
@@ -68,7 +68,7 @@ fn spawn_water_golem(
         return;
     }
 
-    commands.entity(parent_forge_entity).despawn();
+    commands.entity(parent_tracking_entity).despawn();
     resources.mana -= WATER_GOLEM_COST_MANA;
     resources.mana_drain -= 1;
 
@@ -80,7 +80,7 @@ fn spawn_water_golem(
         return;
     };
 
-    let mut cmds = commands.spawn((
+    commands.spawn((
         BuildingLocation(coords),
         BuildingType::WaterGolem,
         WaterGolem::default(),
@@ -89,6 +89,10 @@ fn spawn_water_golem(
             config.0.extend(0.05),
         ),
         ManaLineBalls::default(),
+        ManaEntityLink {
+            from_entity: parent_forge,
+            destruction_time: None,
+        },
         StateScoped(Screen::Gameplay),
         Transform::from_xyz(world_coords.x, world_coords.y, 0.1),
         Visibility::Visible,
@@ -99,13 +103,6 @@ fn spawn_water_golem(
             ..default()
         },
     ));
-    let to_entity = cmds.id();
-
-    cmds.insert(ManaEntityLink {
-        from_entity: parent_forge,
-        to_entity,
-        destruction_time: None,
-    });
 
     // update the map underneath to turn to buildings
     BUILDING_FOOTPRINT_OFFSETS.iter().for_each(|offset| {

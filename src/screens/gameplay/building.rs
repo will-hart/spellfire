@@ -243,11 +243,11 @@ impl ManaLine {
 }
 
 /// used to link parent mana forge/city hall to child
+/// The entity that this is attached to is the target of the link
 #[derive(Component, Reflect, Debug, Copy, Clone)]
 #[reflect(Component)]
 pub struct ManaEntityLink {
     pub from_entity: Entity,
-    pub to_entity: Entity,
     pub destruction_time: Option<f32>,
 }
 
@@ -274,35 +274,35 @@ fn track_building_parent_while_placing(
 
     let mouse_pos = mouse.world_pos;
 
-    let closest = if matches!(parent.building_type, BuildingType::ManaForge) {
+    // Find the closest mana forge
+    let mut distances = forges
+        .iter()
+        .filter_map(|(e, tx)| {
+            let distance_to_forge = mouse_pos.distance_squared(tx.translation.truncate());
+            if distance_to_forge > MAX_DISTANCE_SQR * map.sprite_size {
+                return None;
+            }
+
+            Some((e, distance_to_forge, tx.translation.truncate()))
+        })
+        .collect::<Vec<_>>();
+
+    // if we're adding a mana forge, also check the city hall
+    if matches!(parent.building_type, BuildingType::ManaForge) {
         let pos = hall.1.translation.truncate();
-
-        let distance_to_forge = mouse_pos.distance_squared(pos);
-        if distance_to_forge > MAX_DISTANCE_SQR * map.sprite_size {
-            None
-        } else {
-            Some((hall.0, hall.1.translation.truncate()))
+        let distance_to_hall = mouse_pos.distance_squared(pos);
+        if distance_to_hall < MAX_DISTANCE_SQR * map.sprite_size {
+            distances.push((hall.0, distance_to_hall, pos));
         }
-    } else {
-        let mut distances = forges
-            .iter()
-            .filter_map(|(e, tx)| {
-                let distance_to_forge = mouse_pos.distance_squared(tx.translation.truncate());
-                if distance_to_forge > MAX_DISTANCE_SQR * map.sprite_size {
-                    return None;
-                }
+    }
 
-                Some((e, distance_to_forge, tx.translation.truncate()))
-            })
-            .collect::<Vec<_>>();
+    // find the closest parent
+    distances.sort_by(|(_, a, _), (_, b, _)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    let closest = distances
+        .first()
+        .map(|(e, _, target_location)| (*e, *target_location));
 
-        distances
-            .sort_by(|(_, a, _), (_, b, _)| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-        distances
-            .first()
-            .map(|(e, _, target_location)| (*e, *target_location))
-    };
-
+    if matches!(parent.building_type, BuildingType::ManaForge) {}
     let Some((closest_forge, tx)) = closest else {
         parent.entity = None;
         parent_mana_line.disabled = true;

@@ -2,7 +2,10 @@
 
 use std::time::Duration;
 
-use bevy::{ecs::world::OnDespawn, prelude::*, time::common_conditions::on_timer};
+use bevy::{
+    ecs::world::OnDespawn, platform::collections::HashSet, prelude::*,
+    time::common_conditions::on_timer,
+};
 use rand::Rng;
 
 use crate::{
@@ -53,7 +56,7 @@ fn burn_buildings(
         (Entity, &BuildingLocation, &BuildingType),
         Without<BuildingMarkedForDestruction>,
     >,
-    mut links: Query<(&ManaEntityLink, Option<&mut ManaLine>)>,
+    mut links: Query<(Entity, &ManaEntityLink, Option<&mut ManaLine>)>,
 ) {
     for (destroyed_entity, loc, building_type) in &buildings {
         // check if there is fire near the building
@@ -82,7 +85,6 @@ fn burn_buildings(
                 let num_fires = rng.gen_range(2..=6);
                 info!("Spawning {num_fires} other fires");
 
-                // TODO: JUICE! spawn fireballs to show the effects
                 for _ in 0..num_fires {
                     let fire_tile_coords =
                         loc.0 + IVec2::new(rng.gen_range(-14..=14), rng.gen_range(-14..14));
@@ -106,13 +108,32 @@ fn burn_buildings(
             }
 
             // check if there are any children that need to be destroyed
-            // TODO: eventually we may need to traverse multiple levels
-            for (link, maybe_line) in &mut links {
-                if link.from_entity == destroyed_entity {
+            // lots of looping iteration here but I guess it happens infrequently
+            // and its too late to think of a better way.
+            let mut entities_to_boom = HashSet::<Entity>::from_iter([destroyed_entity]);
+            let mut made_changes = true;
+
+            while made_changes {
+                made_changes = false;
+
+                for (target_entity, link, _) in &links {
+                    if entities_to_boom.contains(&link.from_entity)
+                        && !entities_to_boom.contains(&target_entity)
+                    {
+                        info!("Queuing {} for destruction", target_entity);
+                        entities_to_boom.insert(target_entity);
+                        made_changes = true;
+                    }
+                }
+            }
+
+            // loop through yet again and do the actual state changes aka the booming
+            for entity in &entities_to_boom {
+                if let Ok((target_entity, _, maybe_line)) = links.get_mut(*entity) {
                     commands
-                        .entity(link.to_entity)
+                        .entity(target_entity)
                         .insert(BuildingMarkedForDestruction {
-                            time_until_boom: 2.0,
+                            time_until_boom: 1.5,
                         });
 
                     if let Some(mut line) = maybe_line {
