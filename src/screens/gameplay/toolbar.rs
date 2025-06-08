@@ -79,7 +79,7 @@ pub struct OnUpdateToolbarButtonDisabledState;
 #[derive(Component, Reflect, Debug, Clone, Copy, Eq, PartialEq)]
 #[reflect(Component)]
 enum ToolbarButtonType {
-    Lightning,
+    Meteor,
     LumberMill,
     ManaForge,
     MinotaurHutch,
@@ -227,10 +227,10 @@ fn _toolbar_buttons(
     if in_endless_mode || show_bolt_in_story {
         toolbar_button(
             toolbar,
-            "Lightning",
-            BuildingMode::Lightning,
-            building_assets.lightning.clone(),
-            ToolbarButtonType::Lightning,
+            "Meteor",
+            BuildingMode::Meteor,
+            building_assets.meteor.clone(),
+            ToolbarButtonType::Meteor,
         );
     }
 
@@ -489,13 +489,13 @@ fn update_build_hint_ui(
 /// Returns a tuple with (hover message, selected message)
 fn toolbar_data(toolbar_type: ToolbarButtonType) -> (HintMessage, HintMessage) {
     match toolbar_type {
-        ToolbarButtonType::Lightning => (
+        ToolbarButtonType::Meteor => (
             HintMessage::BuildingData {
-                name: "Lightning Bolt".into(),
+                name: "Meteor".into(),
                 cost: "Free!".into(),
-                details: "Be a pyro and start some fires :D".into(),
+                details: "Hurl some giant rocks and start some fires :D".into(),
             },
-            "Click to trigger a lightning bolt, press <space> to stop.".into(),
+            "Click to trigger a meteor bolt, press <space> to stop.".into(),
         ),
         ToolbarButtonType::LumberMill => (
             HintMessage::BuildingData {
@@ -545,7 +545,7 @@ fn toolbar_button_disabled(
     resources: &Res<PlayerResources>,
 ) -> bool {
     match toolbar_type {
-        ToolbarButtonType::Lightning => false,
+        ToolbarButtonType::Meteor => false,
         ToolbarButtonType::LumberMill => resources.lumber < LUMBER_MILL_COST_LUMBER,
         ToolbarButtonType::ManaForge => resources.lumber < MANA_FORGE_COST_LUMBER,
         ToolbarButtonType::MinotaurHutch => resources.mana < MINOTAUR_COST_MANA,

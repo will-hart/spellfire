@@ -36,10 +36,10 @@ Fire sim
   - [x] animated power surge to child buildings through mana lines "sorta"
   - [ ] animated child building detonation
   - [ ] audio on building explode
-- [ ] Better audio
-  - [ ] audio on lightning bolts hitting
-  - [ ] audio on lightning bolts launched
-- [ ] swap lightning bolts in story mode for flaming meteors
+- [x] Better audio
+  - [x] audio on lightning bolts hitting
+  - [x] audio on lightning bolts launched
+- [x] swap lightning bolts in story mode for flaming meteors
 - [x] animated connection to child buildings
 
 Polish

@@ -13,7 +13,7 @@ use crate::{
             SpawnMinotaur, SpawnStormMage, SpawnWaterGolem, TrackParentBuildingWhilePlacing,
         },
     },
-    wildfire::{GameMap, OnLightningStrike},
+    wildfire::{GameMap, OnMeteorStrike},
 };
 
 mod building;
@@ -124,7 +124,7 @@ pub struct StormMagePlacementRotation(pub MageRotation);
 pub enum BuildingMode {
     #[default]
     None,
-    Lightning,
+    Meteor,
     PlaceCityHall,
     PlaceLumberMill,
     PlaceManaForge,
@@ -140,7 +140,7 @@ impl From<BuildingMode> for BuildingType {
             BuildingMode::PlaceWaterGolem => BuildingType::WaterGolem,
             BuildingMode::PlaceStormMage => BuildingType::StormMage,
             BuildingMode::None
-            | BuildingMode::Lightning
+            | BuildingMode::Meteor
             | BuildingMode::PlaceCityHall
             | BuildingMode::PlaceLumberMill
             | BuildingMode::PlaceManaForge => unreachable!(),
@@ -180,12 +180,12 @@ fn handle_mouse_click_input(
         BuildingMode::PlaceLumberMill => {
             commands.queue(SpawnLumberMill(mouse.world_pos));
         }
-        BuildingMode::Lightning => {
+        BuildingMode::Meteor => {
             if let Some(map) = maybe_map {
                 let coords = map.tile_coords(mouse.world_pos);
-                commands.trigger(OnLightningStrike(coords));
+                commands.trigger(OnMeteorStrike(coords));
             } else {
-                warn!("Skipping lightning strike input as there is no map yet");
+                warn!("Skipping meteor strike input as there is no map yet");
             }
         }
         BuildingMode::PlaceManaForge => {
@@ -313,7 +313,7 @@ fn handle_build_mode_changing(
             hint.clear();
             commands.remove_resource::<StormMagePlacementRotation>();
         }
-        BuildingMode::Lightning => {}
+        BuildingMode::Meteor => {}
         BuildingMode::PlaceCityHall => {
             commands.spawn((
                 CursorModeFollower,
@@ -363,7 +363,7 @@ fn handle_build_mode_changing(
                         BuildingMode::PlaceWaterGolem => building_assets.water_golem.clone(),
                         BuildingMode::PlaceStormMage => building_assets.storm_mage.clone(),
                         BuildingMode::None
-                        | BuildingMode::Lightning
+                        | BuildingMode::Meteor
                         | BuildingMode::PlaceCityHall
                         | BuildingMode::PlaceLumberMill
                         | BuildingMode::PlaceManaForge => {

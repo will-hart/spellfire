@@ -14,7 +14,7 @@ use crate::{
             building::{BuildingLocation, ManaEntityLink, ManaLine},
         },
     },
-    wildfire::{GameMap, OnLightningStrike},
+    wildfire::{GameMap, OnMeteorStrike},
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -79,7 +79,7 @@ fn burn_buildings(
                 for _ in 0..num_fires {
                     let fire_tile_coords =
                         loc.0 + IVec2::new(rng.gen_range(-10..=10), rng.gen_range(-10..10));
-                    commands.trigger(OnLightningStrike(fire_tile_coords));
+                    commands.trigger(OnMeteorStrike(fire_tile_coords));
                 }
             }
 

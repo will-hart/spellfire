@@ -127,7 +127,7 @@ pub struct BuildingAssets {
     #[dependency]
     pub city_hall: Handle<Image>,
     #[dependency]
-    pub lightning: Handle<Image>,
+    pub meteor: Handle<Image>,
     #[dependency]
     pub lumber_mill: Handle<Image>,
     #[dependency]
@@ -152,8 +152,8 @@ impl FromWorld for BuildingAssets {
                     settings.sampler = ImageSampler::nearest();
                 },
             ),
-            lightning: assets.load_with_settings(
-                "images/lightning.png",
+            meteor: assets.load_with_settings(
+                "images/meteor_icon.png",
                 |settings: &mut ImageLoaderSettings| {
                     // Use `nearest` image sampling to preserve pixel art style.
                     settings.sampler = ImageSampler::nearest();
