@@ -392,6 +392,7 @@ fn spawn_toolbar(
         Name::new("Hint Popup UI"),
         ToolbarUi,
         BuildingHintToolbar,
+        GlobalZIndex(3),
         StateScoped(Screen::Gameplay),
         NodeBuilder::new()
             .position(PositionType::Absolute)
