@@ -49,8 +49,9 @@ Polish
 - [ ] music
   - [x] title
   - [ ] gameplay
-    - [ ] track 1 - Em 6/2+3 5/2+3 4/2+3 Am 6/2+3 5/2+3 4/2+3 
-- [ ] lumber mills can also plant trees in grass
+    - [x] track 1 - musescore
+    - [ ] track 2 - Some more dramatic "its burning" tune
+- [x] lumber mills can also plant trees in grass
 - [ ] more building types
 
 Probably out of scope for jam

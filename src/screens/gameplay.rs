@@ -470,7 +470,7 @@ fn spawn_toolbar(
                         HintMessage::BuildingData {
                             name: "Lumber Mill".into(),
                             cost: "30 Lumber".into(),
-                            details: "Produces Lumber from nearby trees every (0.5 sec). Doesn't require a Mana Forge nearby.".into(),
+                            details: "Produces Lumber from nearby trees every (0.5 sec), with a 25% chance to plant a tree instead. Can be placed anywhere, but best in a forest!".into(),
                         },
                         "Click the map to place a lumber mill. Press <space> to cancel placement.".into()
                     );

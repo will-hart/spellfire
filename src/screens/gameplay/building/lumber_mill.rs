@@ -100,18 +100,20 @@ impl Default for LumberMill {
 
 impl LumberMill {
     /// Find the next tree for the lumber mill to harvest
-    fn find_next_tree(&mut self, map: &mut GameMap, center: IVec2) -> Option<IVec2> {
+    fn find_next_target(
+        &mut self,
+        map: &mut GameMap,
+        center: IVec2,
+        target_terrain: TerrainType,
+    ) -> Option<IVec2> {
         // first find all the available cells that are trees
         let coords = map
             .cells_within_range(center, self.range)
             .filter(
                 // limit to trees and grass
                 |coord| {
-                    matches!(
-                        // direct access ok here as we only have valid coords
-                        map.data[coord.y as usize][coord.x as usize].terrain,
-                        TerrainType::Tree
-                    )
+                    // direct access ok here as we only have valid coords
+                    map.data[coord.y as usize][coord.x as usize].terrain == target_terrain
                 },
             )
             .collect::<Vec<_>>();
@@ -134,8 +136,15 @@ fn produce_from_lumber_mill(
     mut mills: Query<(&BuildingLocation, &mut LumberMill)>,
 ) {
     let delta = time.delta_secs();
+    let mut rng = rand::thread_rng();
 
     for (loc, mut mill) in &mut mills {
+        let (target_terrain, new_terrain) = if rng.gen_bool(0.25) {
+            (TerrainType::Grassland, TerrainType::Tree)
+        } else {
+            (TerrainType::Tree, TerrainType::Grassland)
+        };
+
         if mill.time_since_last_tick + delta <= 1.0 {
             mill.time_since_last_tick += delta;
             continue;
@@ -144,7 +153,7 @@ fn produce_from_lumber_mill(
         mill.time_since_last_tick = 0.0;
 
         // reduce the current cell
-        let Some(coord) = mill.find_next_tree(&mut map, loc.0) else {
+        let Some(coord) = mill.find_next_target(&mut map, loc.0, target_terrain) else {
             return;
         };
 
@@ -153,16 +162,16 @@ fn produce_from_lumber_mill(
             return;
         };
         match current.terrain {
-            TerrainType::Tree => {
-                current.terrain = TerrainType::Grassland;
+            TerrainType::Tree | TerrainType::Grassland => {
+                current.terrain = new_terrain;
                 current.mark_dirty();
-                resources.lumber += 1;
-                // continue, don't move on until we have dirt
-                continue;
+
+                if new_terrain == TerrainType::Grassland {
+                    resources.lumber += 1;
+                }
             }
             TerrainType::Dirt
             | TerrainType::Building
-            | TerrainType::Grassland
             | TerrainType::Stone
             | TerrainType::Fire
             | TerrainType::Smoldering => {
