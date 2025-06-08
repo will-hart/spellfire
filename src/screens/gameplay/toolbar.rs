@@ -130,7 +130,6 @@ fn toolbar_button(
     image: Handle<Image>,
     toolbar_type: ToolbarButtonType,
 ) {
-    let mode = mode.clone();
     let label = button_label.into();
     let (hover, selected) = toolbar_data(toolbar_type);
 
@@ -166,7 +165,7 @@ fn toolbar_button(
             >| {
                 if let Ok(mut bg) = buttons.get_mut(_trigger.target()) {
                     info!("Setting building mode to {mode:?}");
-                    *new_mode = mode.clone();
+                    *new_mode = mode;
                     hint.0 = selected.clone();
                     bg.0 = SLATE_700.into();
                 }
@@ -500,7 +499,7 @@ fn toolbar_data(toolbar_type: ToolbarButtonType) -> (HintMessage, HintMessage) {
         ToolbarButtonType::LumberMill => (
             HintMessage::BuildingData {
                 name: "Lumber Mill".into(),
-                cost: "30 Lumber".into(),
+                cost: format!("{LUMBER_MILL_COST_LUMBER} Lumber"),
                 details: "Produces Lumber from nearby trees every (0.5 sec), with a 25% chance to plant a tree instead. Can be placed anywhere, but best in a forest!".into(),
             },
             "Produces Lumber from nearby trees every (0.5 sec), with a 25% chance to plant a tree instead. Can be placed anywhere, but best in a forest!".into()
@@ -508,7 +507,7 @@ fn toolbar_data(toolbar_type: ToolbarButtonType) -> (HintMessage, HintMessage) {
         ToolbarButtonType::ManaForge => (
             HintMessage::BuildingData {
                  name: "Mana Forge".into(),
-                 cost: "50 Lumber".into(),
+                 cost: format!("{MANA_FORGE_COST_LUMBER} Lumber"),
                  details: "MANA FORGE. Cost: 50 Lumber. Produces Mana (3/sec), required for most other buildings.".into()
             },
              "Click the map to place a forge. Press <space> to cancel placement.".into()
@@ -516,7 +515,7 @@ fn toolbar_data(toolbar_type: ToolbarButtonType) -> (HintMessage, HintMessage) {
         ToolbarButtonType::MinotaurHutch => (
             HintMessage::BuildingData {
                 name: "Minotaur Hutch".into(),
-                cost: format!("{} Mana", MINOTAUR_COST_MANA),
+                cost: format!("{MINOTAUR_COST_MANA} Mana"),
                 details: "The minotaur inside consumes 1 mana / sec and turns trees into grass into dirt. Requires Mana Forge nearby.".into()
             },
             "Click the map to place a minotaur camp (close to a mana forge). Press <space> to cancel placement.".into()
@@ -524,7 +523,7 @@ fn toolbar_data(toolbar_type: ToolbarButtonType) -> (HintMessage, HintMessage) {
          ToolbarButtonType::StormMage => (
              HintMessage::BuildingData {
                  name: "Storm Mage".into(),
-                 cost: format!("{} Mana", STORM_MAGE_COST_MANA),
+                 cost: format!("{STORM_MAGE_COST_MANA} Mana"),
                  details: "The Storm Mage calls down strong winds consuming 2 mana / sec and push the fire away in one direction. Requires Mana Forge nearby".into(),
              },
              "Click the map to place a storm mage (close to a mana forge). Press <space> to cancel placement or <r> to rotate.".into()
@@ -532,7 +531,7 @@ fn toolbar_data(toolbar_type: ToolbarButtonType) -> (HintMessage, HintMessage) {
          ToolbarButtonType::WaterGolem => (
              HintMessage::BuildingData {
                  name: "Water Golem".into(),
-                 cost: format!("{} Mana", WATER_GOLEM_COST_MANA),
+                 cost: format!("{WATER_GOLEM_COST_MANA} Mana"),
                  details: "The Water Golem inhabits the area, consuming 1 mana / sec to increase the moisture around the area. Wetter areas are harder to set alight. Requires Mana Forge nearby".into(),
              },
              "Click the map to place a water golem (close to a mana forge). Press <space> to cancel placement".into()
