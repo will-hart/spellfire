@@ -110,7 +110,7 @@ impl Default for PlayerResources {
         Self {
             mana: 0,
             mana_drain: 0,
-            lumber: 100,
+            lumber: 80,
         }
     }
 }

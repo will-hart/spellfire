@@ -10,7 +10,10 @@ use rand::Rng;
 
 use crate::{
     Pause,
-    screens::{BuildingMode, BuildingType, EndlessMode, OnRedrawToolbar, RequiresCityHall, Screen},
+    screens::{
+        BuildingMode, BuildingType, EndlessMode, OnRedrawToolbar, PlayerResources,
+        RequiresCityHall, Screen,
+    },
     wildfire::{OnSpawnMap, SpawnedMap, TerrainCell, TerrainCellState, TerrainType, WindDirection},
 };
 
@@ -119,6 +122,7 @@ fn redraw_map(
     buildings: Query<Entity, With<BuildingType>>,
 ) {
     commands.init_resource::<RequiresCityHall>();
+    commands.insert_resource(PlayerResources::default());
 
     for map in spawned_maps {
         commands.entity(map).despawn();

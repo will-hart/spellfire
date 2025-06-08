@@ -46,7 +46,7 @@ pub fn spawn_level(
     mut next_screen: ResMut<NextState<Screen>>,
 ) {
     let endless_mode = endless_mode.is_some();
-    commands.init_resource::<PlayerResources>();
+    commands.insert_resource(PlayerResources::default());
 
     if endless_mode {
         info!("Spawning random level ixn endless mode");
