@@ -7,7 +7,7 @@ use bevy::prelude::*;
 use crate::{
     Pause,
     screens::{Screen, gameplay::building::SpawnCityHall},
-    wildfire::{GOOD_SEEDS, GameMap, OnMeteorStrike},
+    wildfire::{GOOD_SEEDS, GameMap, OnMeteorStrike, WindDirection},
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -50,6 +50,10 @@ pub struct StoryModeLevel {
     pub starting_location: IVec2,
     /// The amount of time since this story level was started
     pub elapsed_time: f32,
+
+    /// Store the wind speed and angle, which is constant for story mode
+    pub wind_speed: f32,
+    pub wind_angle: f32,
 }
 
 impl Command for StoryModeLevel {
@@ -58,11 +62,18 @@ impl Command for StoryModeLevel {
     }
 }
 
-fn spawn_story(In(config): In<StoryModeLevel>, mut commands: Commands, map: Res<GameMap>) {
+fn spawn_story(
+    In(config): In<StoryModeLevel>,
+    mut commands: Commands,
+    map: Res<GameMap>,
+    mut wind: ResMut<WindDirection>,
+) {
     info!("Spawning items for level");
 
     let world_coords = map.world_coords(config.starting_location);
     commands.queue(SpawnCityHall(world_coords));
+
+    wind.r#override(config.wind_angle, config.wind_speed);
 }
 
 /// Tick the level elapsed time while unpaused
@@ -98,7 +109,8 @@ pub fn get_level_data(lvl: usize) -> Option<StoryModeLevel> {
                 (19.2, IVec2 { x: 25, y: 173 }),
             ]
             .into(),
-
+            wind_speed: 15.0,
+            wind_angle: 32.0,
             elapsed_time: 0.0,
         })
     } else if lvl == 2 {
@@ -112,6 +124,8 @@ pub fn get_level_data(lvl: usize) -> Option<StoryModeLevel> {
             ]
             .into(),
 
+            wind_speed: 15.0,
+            wind_angle: 32.0,
             elapsed_time: 0.0,
         })
     } else {
