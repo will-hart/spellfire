@@ -29,7 +29,7 @@ impl Default for WindDirection {
 
         Self {
             angle,
-            strength: 100.0,
+            strength: 10.0,
             variance: std::f32::consts::FRAC_PI_2.to_degrees(),
             target,
         }
@@ -42,7 +42,7 @@ impl std::fmt::Display for WindDirection {
             write!(
                 f,
                 "{:.0}kts, from {} [{}-->{}]",
-                self.strength / 10.0,
+                self.strength,
                 self.compass(),
                 self.angle,
                 self.target
@@ -54,6 +54,16 @@ impl std::fmt::Display for WindDirection {
 }
 
 impl WindDirection {
+    /// The current angle of the wind in degrees
+    pub fn angle_degrees(&self) -> f32 {
+        self.angle
+    }
+
+    /// The current strength of the wind in .... knots?
+    pub fn strength(&self) -> f32 {
+        self.strength
+    }
+
     /// Gets the current wind direction as a vector
     pub fn get_wind_vec(&self) -> Vec2 {
         (Quat::from_axis_angle(Vec3::Z, self.angle.to_radians()) * Vec3::X * self.strength)
@@ -79,6 +89,8 @@ impl WindDirection {
 /// the speed the wind changes in degrees per second
 const WIND_CHANGE_SPEED: f32 = 5.0;
 const WIND_STRENGTH_VARIANCE: f32 = 1.0;
+const MIN_WIND_SPEED: f32 = 10.0;
+const MAX_WIND_SPEED: f32 = 100.0;
 
 fn wandery_wind(time: Res<Time>, mut wind: ResMut<WindDirection>) {
     // find out which rotation direction is faster
@@ -115,8 +127,10 @@ fn wandery_wind(time: Res<Time>, mut wind: ResMut<WindDirection>) {
             rng.gen_range((wind.angle - wind.variance)..(wind.angle + wind.variance)) % 360.0;
     }
 
-    // random walk the strength between some limits
+    // random walk the strength between some limits as defined by the wind equation
+    // in wildire/map.rs. See docs/wind_sim.png for a graph of the proposed (black) and
+    // revised (red) wind influence equation
     wind.strength = (wind.strength
         + rng.gen_range(-WIND_STRENGTH_VARIANCE..WIND_STRENGTH_VARIANCE))
-    .clamp(30.0, 150.0);
+    .clamp(MIN_WIND_SPEED, MAX_WIND_SPEED);
 }

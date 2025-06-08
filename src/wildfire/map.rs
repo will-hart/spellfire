@@ -36,23 +36,23 @@ const NEIGHBOUR_COORDINATES: [IVec2; NEIGHBOURHOOD_SIZE] = [
     IVec2::new(-1, -1),
 ];
 
-const NEIGHBOUR_VECTOR: [Vec2; NEIGHBOURHOOD_SIZE] = [
+const NEIGHBOUR_VECTOR: [f32; NEIGHBOURHOOD_SIZE] = [
     // Left
-    Vec2::new(-1., 0.),
+    std::f32::consts::PI,
     // Top Left
-    Vec2::new(-1., 1.),
+    std::f32::consts::FRAC_PI_2 * 1.5,
     // Top
-    Vec2::new(0., 1.),
+    std::f32::consts::FRAC_PI_2,
     // Top Right
-    Vec2::new(1., 1.),
+    std::f32::consts::FRAC_PI_4,
     // Right
-    Vec2::new(1., 0.),
+    0.0,
     // Bottom Right
-    Vec2::new(1., -1.),
+    -std::f32::consts::FRAC_PI_4,
     // Bottom
-    Vec2::new(0., -1.),
+    -std::f32::consts::FRAC_PI_2,
     // Bottom Left
-    Vec2::new(-1., -1.),
+    -std::f32::consts::FRAC_PI_2 * 1.5,
 ];
 
 const NOISE_REDIST_FACTOR: f32 = 1.46;
@@ -87,7 +87,7 @@ pub(super) fn plugin(app: &mut App) {
 }
 
 fn update_map(mut map: ResMut<GameMap>, wind: Res<WindDirection>) {
-    map.update(wind.get_wind_vec());
+    map.update(&wind);
 }
 
 fn update_sprites(mut map: ResMut<GameMap>, mut sprites: Query<&mut Sprite, With<TerrainCell>>) {
@@ -364,12 +364,15 @@ impl GameMap {
     }
 
     /// Updates the map, spreading fire etc
-    pub fn update(&mut self, global_wind: Vec2) {
-        const BURN_DECAY_RATE: f64 = 0.3;
-        const FIRE_SPREAD_CHANCE: f64 = 0.2;
-        const MOISTURE_DECAY_RATE: f32 = 0.01;
+    pub fn update(&mut self, global_wind: &WindDirection) {
+        const BURN_DECAY_RATE: f64 = 0.15;
+        const FIRE_SPREAD_CHANCE: f64 = 0.35;
+        const MOISTURE_DECAY_RATE: f32 = 0.02;
 
         let mut rng = rand::thread_rng();
+
+        let global_wind_angle = global_wind.angle_degrees().to_radians();
+        let global_wind_strength = global_wind.strength();
 
         for y in 0..self.size_y {
             for x in 0..self.size_x {
@@ -406,17 +409,25 @@ impl GameMap {
                                 if rng.gen_bool(FIRE_SPREAD_CHANCE) {
                                     let base_probability = self.data[y][x].terrain.burn_rate();
 
-                                    let wind_angle = (self.data[y][x].wind + global_wind)
-                                        .angle_to(NEIGHBOUR_VECTOR[idx]);
-                                    let wind_strength = self.data[y][x].wind.length();
-                                    let wind_factor =
-                                        (wind_strength * 0.131 * (wind_angle.cos() - 1.0))
-                                            * (0.045 * wind_strength).exp();
+                                    // pick either the local wind override or the global
+                                    let (wind_angle, wind_strength) =
+                                        if let Some((local_angle, local_strength)) =
+                                            self.data[y][x].wind
+                                        {
+                                            (local_angle.to_radians(), local_strength)
+                                        } else {
+                                            (global_wind_angle, global_wind_strength)
+                                        };
+
+                                    let delta_angle = wind_angle - NEIGHBOUR_VECTOR[idx];
+                                    let wind_factor = 1.0
+                                        + (wind_strength * 0.021 * (delta_angle.cos() - 1.0))
+                                            * (0.005 * wind_strength).exp();
 
                                     let moisture_factor = 1. - self.data[y][x].moisture;
 
                                     let burn_chance =
-                                        (base_probability * moisture_factor * (1. + wind_factor))
+                                        (base_probability * moisture_factor * wind_factor)
                                             .clamp(0.0, 1.0)
                                             as f64;
 
