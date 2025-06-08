@@ -31,11 +31,14 @@ Fire sim
 
 8. Juice
 
-- [ ] fireballs on mana forge detonation
-- [ ] animated power surge to child buildings through mana lines
-- [ ] animated child building detonation
-- [ ] audio on building explode
-- [ ] audio on lightning bolts hitting
+- [ ] Building destruction
+  - [ ] fireballs on mana forge detonation
+  - [ ] animated power surge to child buildings through mana lines
+  - [ ] animated child building detonation
+  - [ ] audio on building explode
+- [ ] Better audio
+  - [ ] audio on lightning bolts hitting
+  - [ ] audio on lightning bolts launched
 - [ ] swap lightning bolts in story mode for flaming meteors
 - [x] animated connection to child buildings
 
@@ -50,7 +53,7 @@ Polish
 5.  - [ ] water mage
 6.- [ ] More scenarios
 - [x] In story mode - zoom to city hall at the start of the game
-3. - [ ] show wind vane in the UI rather than text
+9. - [ ] show wind vane in the UI rather than text
 - [x] is wind even working?
 - [x] menu rejig
   - [x] tutorial on the main page
