@@ -18,7 +18,7 @@ mod meteor;
 mod wind;
 
 pub use map::{GOOD_SEEDS, GameMap};
-pub use meteor::OnMeteorStrike;
+pub use meteor::{Fireball, MeteorAssets, OnMeteorStrike};
 pub use wind::WindDirection;
 
 pub fn plugin(app: &mut App) {

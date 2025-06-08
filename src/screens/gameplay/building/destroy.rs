@@ -14,7 +14,7 @@ use crate::{
             building::{BuildingLocation, ManaEntityLink, ManaLine},
         },
     },
-    wildfire::{GameMap, OnMeteorStrike},
+    wildfire::{Fireball, GameMap, MeteorAssets, TerrainType},
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -45,7 +45,8 @@ pub struct BuildingMarkedForDestruction {
 /// Burns buildings that are consumed by fire
 fn burn_buildings(
     mut commands: Commands,
-    map: Res<GameMap>,
+    meteor_assets: Res<MeteorAssets>,
+    mut map: ResMut<GameMap>,
     buildings: Query<
         (Entity, &BuildingLocation, &BuildingType),
         Without<BuildingMarkedForDestruction>,
@@ -72,14 +73,29 @@ fn burn_buildings(
             if *building_type == BuildingType::ManaForge {
                 // spawn fires around
                 let mut rng = rand::thread_rng();
-                let num_fires = rng.gen_range(2..=5);
+                let num_fires = rng.gen_range(2..=6);
                 info!("Spawning {num_fires} other fires");
 
                 // TODO: JUICE! spawn fireballs to show the effects
                 for _ in 0..num_fires {
                     let fire_tile_coords =
-                        loc.0 + IVec2::new(rng.gen_range(-10..=10), rng.gen_range(-10..10));
-                    commands.trigger(OnMeteorStrike(fire_tile_coords));
+                        loc.0 + IVec2::new(rng.gen_range(-14..=14), rng.gen_range(-14..14));
+
+                    commands.spawn((
+                        Fireball {
+                            target_world_pos: map.world_coords(fire_tile_coords),
+                        },
+                        Transform::from_translation(map.world_coords(loc.0).extend(0.5)),
+                        Sprite {
+                            image: meteor_assets.fireball.clone(),
+                            ..Default::default()
+                        },
+                    ));
+
+                    if let Some(cell) = map.get_mut(fire_tile_coords) {
+                        cell.terrain = TerrainType::Fire;
+                        cell.mark_dirty();
+                    }
                 }
             }
 

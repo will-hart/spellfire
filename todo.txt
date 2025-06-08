@@ -32,9 +32,8 @@ Fire sim
 8. Juice
 
 - [ ] Building destruction
-  - [ ] fireballs on mana forge detonation
+  - [x] fireballs on mana forge detonation
   - [x] animated power surge to child buildings through mana lines "sorta"
-  - [ ] animated child building detonation
   - [ ] audio on building explode
 - [x] Better audio
   - [x] audio on lightning bolts hitting
@@ -72,6 +71,7 @@ Probably out of scope for jam
 - [ ] redraw map without respawning sprites (see map::redraw_map system) - possibly use a texture?
 - [ ] fast forward / time acceleration
 - [ ] animated buildings
+  - [ ] including animated child building detonation
 
 Bugs
 

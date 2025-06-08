@@ -18,6 +18,7 @@ use crate::{
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<OnMeteorStrike>();
     app.register_type::<Meteor>();
+    app.register_type::<Fireball>();
 
     app.register_type::<MeteorAssets>();
     app.load_resource::<MeteorAssets>();
@@ -25,7 +26,8 @@ pub(super) fn plugin(app: &mut App) {
     app.add_observer(handle_meteor_strike);
     app.add_systems(
         Update,
-        handle_meteor_impacts.run_if(in_state(Screen::Gameplay).and(in_state(Pause(false)))),
+        (handle_meteor_impacts, handle_fireball_impacts)
+            .run_if(in_state(Screen::Gameplay).and(in_state(Pause(false)))),
     );
 }
 
@@ -38,6 +40,12 @@ pub struct Meteor {
     target_coord: IVec2,
     target_world_pos: Vec2,
     speed: f32,
+}
+
+#[derive(Component, Reflect, Debug, Clone)]
+#[reflect(Component)]
+pub struct Fireball {
+    pub target_world_pos: Vec2,
 }
 
 fn handle_meteor_strike(
@@ -82,6 +90,26 @@ fn handle_meteor_strike(
 
 /// Timed to the audio clip :D
 const METEOR_FLIGHT_TIME: f32 = 0.9;
+
+/// RANDOM I GUESS
+const FIREBALL_SPEED: f32 = 70.0;
+fn handle_fireball_impacts(
+    mut commands: Commands,
+    time: Res<Time>,
+    mut fireballs: Query<(Entity, &mut Transform, &Fireball)>,
+) {
+    for (entity, mut tx, fireball) in &mut fireballs {
+        let delta = (fireball.target_world_pos - tx.translation.truncate()).normalize_or_zero()
+            * time.delta_secs()
+            * FIREBALL_SPEED;
+        tx.translation += delta.extend(0.0);
+
+        if (fireball.target_world_pos - tx.translation.truncate()).length_squared() < 100.0 {
+            // we hit
+            commands.entity(entity).despawn();
+        }
+    }
+}
 
 fn handle_meteor_impacts(
     mut commands: Commands,
@@ -129,11 +157,13 @@ fn handle_meteor_impacts(
 
 #[derive(Resource, Asset, Clone, Reflect)]
 #[reflect(Resource)]
-struct MeteorAssets {
+pub struct MeteorAssets {
     #[dependency]
     boom_one: Handle<AudioSource>,
     #[dependency]
     meteor: Handle<Image>,
+    #[dependency]
+    pub fireball: Handle<Image>,
 }
 
 impl FromWorld for MeteorAssets {
@@ -143,6 +173,13 @@ impl FromWorld for MeteorAssets {
             boom_one: assets.load("audio/sound_effects/boom_one.ogg"),
             meteor: assets.load_with_settings(
                 "images/meteor.png",
+                |settings: &mut ImageLoaderSettings| {
+                    // Use `nearest` image sampling to preserve pixel art style.
+                    settings.sampler = ImageSampler::nearest();
+                },
+            ),
+            fireball: assets.load_with_settings(
+                "images/fireball.png",
                 |settings: &mut ImageLoaderSettings| {
                     // Use `nearest` image sampling to preserve pixel art style.
                     settings.sampler = ImageSampler::nearest();
