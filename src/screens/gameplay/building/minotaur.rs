@@ -136,7 +136,7 @@ impl Default for Minotaur {
         Self {
             time_since_last_tick: 0.0,
             location: IVec2::ZERO,
-            range: 5,
+            range: 6,
             consumed_last_tick: true,
         }
     }
