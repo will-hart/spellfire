@@ -9,8 +9,8 @@ use crate::{
     screens::{
         Screen,
         gameplay::building::{
-            ManaLine, ParentBuilding, SpawnCityHall, SpawnLumberMill, SpawnManaForge,
-            SpawnMinotaur, SpawnWaterGolem,
+            BuildingAssets, ManaLine, ParentBuilding, SpawnCityHall, SpawnLumberMill,
+            SpawnManaForge, SpawnMinotaur, SpawnWaterGolem,
         },
     },
     wildfire::{GameMap, OnLightningStrike},
@@ -30,6 +30,7 @@ pub use toolbar::OnRedrawToolbar;
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<BuildingMode>();
     app.register_type::<CursorModeItem>();
+    app.register_type::<CursorModeFollower>();
     app.register_type::<PlayerResources>();
     app.register_type::<BuildTextHint>();
     app.register_type::<BuildTextMarker>();
@@ -78,6 +79,7 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(
         Update,
         (
+            cursor_mode_follower,
             handle_mouse_click_input.run_if(input_just_pressed(MouseButton::Left)),
             handle_build_mode_changing
                 .run_if(resource_changed::<BuildingMode>)
@@ -268,9 +270,23 @@ fn cancel_cursor_mode(
 #[reflect(Component)]
 pub struct CursorModeItem;
 
+#[derive(Component, Reflect, Debug, Clone, Default)]
+#[reflect(Component)]
+pub struct CursorModeFollower;
+
+fn cursor_mode_follower(
+    mouse: Res<MousePosition>,
+    mut cursor_items: Query<&mut Transform, With<CursorModeFollower>>,
+) {
+    for mut cursor_tx in &mut cursor_items {
+        cursor_tx.translation = mouse.world_pos.extend(1.0);
+    }
+}
+
 fn handle_build_mode_changing(
     mut commands: Commands,
     mode: Res<BuildingMode>,
+    building_assets: Res<BuildingAssets>,
     mut hint: ResMut<BuildTextHint>,
     previous_items: Query<Entity, With<CursorModeItem>>,
 ) {
@@ -283,16 +299,42 @@ fn handle_build_mode_changing(
         BuildingMode::None => {
             hint.clear();
         }
-        BuildingMode::Lightning | BuildingMode::PlaceCityHall | BuildingMode::PlaceLumberMill => {}
+        BuildingMode::Lightning => {}
+        BuildingMode::PlaceCityHall => {
+            commands.spawn((
+                CursorModeFollower,
+                CursorModeItem,
+                Sprite {
+                    image: building_assets.city_hall.clone(),
+                    ..default()
+                },
+            ));
+        }
+        BuildingMode::PlaceLumberMill => {
+            commands.spawn((
+                CursorModeFollower,
+                CursorModeItem,
+                Sprite {
+                    image: building_assets.lumber_mill.clone(),
+                    ..default()
+                },
+            ));
+        }
+
         BuildingMode::PlaceManaForge => {
             info!("Spawning building mode items for mana forge placement");
             commands.spawn((
                 ParentBuilding::new(BuildingType::ManaForge),
                 CursorModeItem,
+                CursorModeFollower,
                 ManaLine {
                     from: Vec3::ZERO,
                     to: Vec3::ZERO,
                     disabled: true,
+                },
+                Sprite {
+                    image: building_assets.mana_forge.clone(),
+                    ..default()
                 },
             ));
         }
@@ -301,10 +343,21 @@ fn handle_build_mode_changing(
             commands.spawn((
                 ParentBuilding::new(next_mode.into()),
                 CursorModeItem,
+                CursorModeFollower,
                 ManaLine {
                     from: Vec3::ZERO,
                     to: Vec3::ZERO,
                     disabled: true,
+                },
+                Sprite {
+                    image: match next_mode {
+                        BuildingMode::PlaceMinotaur => building_assets.minotaur.clone(),
+                        BuildingMode::PlaceWaterGolem => building_assets.water_golem.clone(),
+                        _ => {
+                            unreachable!();
+                        }
+                    },
+                    ..default()
                 },
             ));
         }
