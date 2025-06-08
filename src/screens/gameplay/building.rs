@@ -12,7 +12,9 @@ use crate::{
     input::MousePosition,
     screens::{
         PlayerResources, Screen,
-        gameplay::{StormMagePlacementRotation, building::mana_forge::ManaForge},
+        gameplay::{
+            CursorModeFollower, StormMagePlacementRotation, building::mana_forge::ManaForge,
+        },
     },
     wildfire::GameMap,
 };
@@ -137,6 +139,8 @@ pub struct BuildingAssets {
     #[dependency]
     pub storm_mage: Handle<Image>,
     #[dependency]
+    pub wind_direction: Handle<Image>,
+    #[dependency]
     pub water_golem: Handle<Image>,
     #[dependency]
     pub building_lost: Handle<AudioSource>,
@@ -184,6 +188,13 @@ impl FromWorld for BuildingAssets {
             ),
             storm_mage: assets.load_with_settings(
                 "images/storm_mage.png",
+                |settings: &mut ImageLoaderSettings| {
+                    // Use `nearest` image sampling to preserve pixel art style.
+                    settings.sampler = ImageSampler::nearest();
+                },
+            ),
+            wind_direction: assets.load_with_settings(
+                "images/wind_direction.png",
                 |settings: &mut ImageLoaderSettings| {
                     // Use `nearest` image sampling to preserve pixel art style.
                     settings.sampler = ImageSampler::nearest();
@@ -257,8 +268,17 @@ pub struct ManaLineBalls {
     pub mana_dot_distance: f32,
 }
 
-fn rotate_storm_mage(mut mode: ResMut<StormMagePlacementRotation>) {
-    mode.0 = mode.0.next();
+fn rotate_storm_mage(
+    mut mage_rotation: ResMut<StormMagePlacementRotation>,
+    mut follower: Query<&mut Transform, With<CursorModeFollower>>,
+) {
+    info!("rotating storm mage1");
+    mage_rotation.0 = mage_rotation.0.next();
+
+    for mut tx in &mut follower {
+        info!("ROtating storm mage");
+        tx.rotation = Quat::from_axis_angle(Vec3::Z, mage_rotation.0.to_angle_rads());
+    }
 }
 
 fn track_building_parent_while_placing(

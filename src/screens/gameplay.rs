@@ -104,6 +104,7 @@ pub(super) fn plugin(app: &mut App) {
     );
 }
 
+/// Shhhhhhh
 fn cheat(mut resources: ResMut<PlayerResources>) {
     resources.mana += 100;
     resources.lumber += 100;
@@ -367,9 +368,34 @@ fn handle_build_mode_changing(
                 },
             ));
         }
-        next_mode @ BuildingMode::PlaceMinotaur
-        | next_mode @ BuildingMode::PlaceWaterGolem
-        | next_mode @ BuildingMode::PlaceStormMage => {
+        BuildingMode::PlaceStormMage => {
+            info!("Spawning building mode items for storm mage placement");
+            commands.init_resource::<StormMagePlacementRotation>();
+            commands
+                .spawn((
+                    TrackParentBuildingWhilePlacing::new(BuildingMode::PlaceStormMage.into()),
+                    CursorModeItem,
+                    CursorModeFollower,
+                    ManaLine::new(Vec3::ZERO, Vec3::ZERO),
+                    Transform::from_rotation(Quat::from_axis_angle(
+                        Vec3::Z,
+                        MageRotation::default().to_angle_rads(),
+                    )),
+                    Sprite {
+                        image: building_assets.storm_mage.clone(),
+                        ..default()
+                    },
+                ))
+                .with_child((
+                    Transform::from_xyz(0.0, 40.0, 0.0),
+                    Sprite {
+                        image: building_assets.wind_direction.clone(),
+                        anchor: bevy::sprite::Anchor::TopCenter,
+                        ..default()
+                    },
+                ));
+        }
+        next_mode @ BuildingMode::PlaceMinotaur | next_mode @ BuildingMode::PlaceWaterGolem => {
             info!("Spawning building mode items for {mode:?} placement");
             commands.spawn((
                 TrackParentBuildingWhilePlacing::new(next_mode.into()),
@@ -380,11 +406,11 @@ fn handle_build_mode_changing(
                     image: match next_mode {
                         BuildingMode::PlaceMinotaur => building_assets.minotaur.clone(),
                         BuildingMode::PlaceWaterGolem => building_assets.water_golem.clone(),
-                        BuildingMode::PlaceStormMage => building_assets.storm_mage.clone(),
                         BuildingMode::None
                         | BuildingMode::Meteor
                         | BuildingMode::PlaceCityHall
                         | BuildingMode::PlaceLumberMill
+                        | BuildingMode::PlaceStormMage
                         | BuildingMode::PlaceManaForge => {
                             unreachable!();
                         }

@@ -6,7 +6,7 @@ use crate::{
     screens::{
         PlayerResources, Screen,
         gameplay::{
-            BuildingMode, STORM_MAGE_COST_MANA,
+            BuildingMode, STORM_MAGE_COST_MANA, StormMagePlacementRotation,
             building::{
                 BUILDING_FOOTPRINT_OFFSETS, BuildingAssets, BuildingLocation, BuildingType,
                 ManaEntityLink, ManaLine, ManaLineBalls, TrackParentBuildingWhilePlacing,
@@ -66,6 +66,7 @@ fn spawn_storm_mage(
     mut building_mode: ResMut<BuildingMode>,
     buildings: Res<BuildingAssets>,
     mut map: ResMut<GameMap>,
+    mage_rotation: Res<StormMagePlacementRotation>,
     parent_forge: Single<(Entity, &TrackParentBuildingWhilePlacing)>,
     forges: Query<&Transform, With<ManaForge>>,
 ) {
@@ -115,7 +116,9 @@ fn spawn_storm_mage(
             destruction_time: None,
         },
         StateScoped(Screen::Gameplay),
-        Transform::from_xyz(world_coords.x, world_coords.y, 0.1),
+        Transform::from_xyz(world_coords.x, world_coords.y, 0.1).with_rotation(
+            Quat::from_axis_angle(Vec3::Z, mage_rotation.0.to_angle_rads()),
+        ),
         Visibility::Visible,
         Sprite {
             image: buildings.storm_mage.clone(),
@@ -151,8 +154,8 @@ impl Default for StormMage {
     fn default() -> Self {
         Self {
             cells: Vec::new(),
-            wind: Vec2::X * 100.0,
-            range: 10,
+            wind: Vec2::X * 200.0,
+            range: 8,
         }
     }
 }
@@ -176,6 +179,16 @@ impl MageRotation {
             MageRotation::Up => MageRotation::Right,
         }
     }
+
+    /// Gets the rotation of this mage in radians
+    pub fn to_angle_rads(&self) -> f32 {
+        match self {
+            MageRotation::Left => std::f32::consts::FRAC_PI_2,
+            MageRotation::Down => 0.0,
+            MageRotation::Right => -std::f32::consts::FRAC_PI_2,
+            MageRotation::Up => std::f32::consts::PI,
+        }
+    }
 }
 
 ///The different cells to use depending on the rotation of the mage
@@ -184,7 +197,7 @@ impl StormMage {
     fn get_relevant_cells(rotation: MageRotation, range: i32) -> impl Iterator<Item = IVec2> {
         let (x_range, y_range) = match rotation {
             MageRotation::Left => (-5..=-1, -range..=range),
-            MageRotation::Down => (-range..=range, 1..=5),
+            MageRotation::Down => (-range..=range, -5..=-1),
             MageRotation::Right => (1..=5, -range..=range),
             MageRotation::Up => (-range..=range, 1..=5),
         };
@@ -201,6 +214,8 @@ impl StormMage {
             };
 
             map_cell.wind += self.wind;
+            map_cell.terrain = TerrainType::Building;
+            map_cell.mark_dirty();
             self.cells.push(cell);
         }
     }
