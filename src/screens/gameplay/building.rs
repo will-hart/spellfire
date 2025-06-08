@@ -272,11 +272,10 @@ fn rotate_storm_mage(
     mut mage_rotation: ResMut<StormMagePlacementRotation>,
     mut follower: Query<&mut Transform, With<CursorModeFollower>>,
 ) {
-    info!("rotating storm mage1");
     mage_rotation.0 = mage_rotation.0.next();
+    info!("Rotated storm mage to {:?}", mage_rotation.0);
 
     for mut tx in &mut follower {
-        info!("ROtating storm mage");
         tx.rotation = Quat::from_axis_angle(Vec3::Z, mage_rotation.0.to_angle_rads());
     }
 }

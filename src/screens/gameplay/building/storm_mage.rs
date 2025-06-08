@@ -154,8 +154,8 @@ impl Default for StormMage {
     fn default() -> Self {
         Self {
             cells: Vec::new(),
-            wind: Vec2::X * 200.0,
-            range: 8,
+            wind: Vec2::ZERO,
+            range: 10,
         }
     }
 }
@@ -163,20 +163,20 @@ impl Default for StormMage {
 #[derive(Debug, Clone, Copy, Default, Reflect)]
 pub enum MageRotation {
     Left,
-    Down,
+    Up,
     #[default]
     Right,
-    Up,
+    Down,
 }
 
 impl MageRotation {
     /// Gets the next rotation clockwise
     pub fn next(self) -> Self {
         match self {
-            MageRotation::Left => MageRotation::Up,
-            MageRotation::Down => MageRotation::Left,
-            MageRotation::Right => MageRotation::Down,
-            MageRotation::Up => MageRotation::Right,
+            MageRotation::Left => MageRotation::Down,
+            MageRotation::Up => MageRotation::Left,
+            MageRotation::Right => MageRotation::Up,
+            MageRotation::Down => MageRotation::Right,
         }
     }
 
@@ -184,9 +184,18 @@ impl MageRotation {
     pub fn to_angle_rads(&self) -> f32 {
         match self {
             MageRotation::Left => std::f32::consts::FRAC_PI_2,
-            MageRotation::Down => 0.0,
+            MageRotation::Up => 0.0,
             MageRotation::Right => -std::f32::consts::FRAC_PI_2,
-            MageRotation::Up => std::f32::consts::PI,
+            MageRotation::Down => std::f32::consts::PI,
+        }
+    }
+
+    pub fn to_wind(&self, strength: f32) -> Vec2 {
+        match self {
+            MageRotation::Left => Vec2::new(-strength, 0.0),
+            MageRotation::Up => Vec2::new(0.0, strength),
+            MageRotation::Right => Vec2::new(strength, 0.0),
+            MageRotation::Down => Vec2::new(0.0, -strength),
         }
     }
 }
@@ -195,11 +204,14 @@ impl MageRotation {
 impl StormMage {
     /// Gets the cells that the mage handles based on its rotation
     fn get_relevant_cells(rotation: MageRotation, range: i32) -> impl Iterator<Item = IVec2> {
+        const MIN_D: i32 = 1;
+        const MAX_D: i32 = 10;
+
         let (x_range, y_range) = match rotation {
-            MageRotation::Left => (-5..=-1, -range..=range),
-            MageRotation::Down => (-range..=range, -5..=-1),
-            MageRotation::Right => (1..=5, -range..=range),
-            MageRotation::Up => (-range..=range, 1..=5),
+            MageRotation::Left => (-MAX_D..=-MIN_D, -range..=range),
+            MageRotation::Up => (-range..=range, MIN_D..=MAX_D),
+            MageRotation::Right => (MIN_D..=MAX_D, -range..=range),
+            MageRotation::Down => (-range..=range, -MAX_D..=MIN_D),
         };
 
         x_range.flat_map(move |x| y_range.clone().map(move |y| IVec2::new(x, y)))
@@ -207,6 +219,8 @@ impl StormMage {
 
     /// applies the effects of the storm mage to the map
     pub fn apply_to_map(&mut self, mage_cell: IVec2, rotation: MageRotation, map: &mut GameMap) {
+        self.wind = rotation.to_wind(2000.0);
+
         for cell in Self::get_relevant_cells(rotation, self.range) {
             let Some(map_cell) = map.get_mut(cell + mage_cell) else {
                 warn!("Unable to locate cell in map, skipping wind from storm mage");
@@ -214,8 +228,8 @@ impl StormMage {
             };
 
             map_cell.wind += self.wind;
-            map_cell.terrain = TerrainType::Building;
-            map_cell.mark_dirty();
+            // map_cell.terrain = TerrainType::Building;
+            // map_cell.mark_dirty();
             self.cells.push(cell);
         }
     }

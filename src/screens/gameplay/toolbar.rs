@@ -492,7 +492,14 @@ fn update_toolbar(
     >,
 ) {
     let cell_state = if let Some(cell) = map.tile_at_world_pos(mouse.world_pos) {
-        format!("{}", *cell)
+        if cfg!(debug_assertions) {
+            format!(
+                "{}, local wind: {} | mouse {:.0},{:.0}",
+                *cell, cell.wind, mouse.world_pos.x, mouse.world_pos.y
+            )
+        } else {
+            format!("{}", *cell)
+        }
     } else {
         String::new()
     };

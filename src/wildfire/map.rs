@@ -186,7 +186,7 @@ impl NoiseMap {
             + 0.25 * self.noise(NOISE_SCALE * 4.0 * x, NOISE_SCALE * 4.0 * y);
         let noise = (noise / (1.0 + 0.5 + 0.25)).powf(NOISE_REDIST_FACTOR);
 
-        const DIRT: f32 = 0.03;
+        const DIRT: f32 = 0.01;
         const GRASS: f32 = 0.5;
         const TREE: f32 = 0.75;
 
@@ -411,15 +411,31 @@ impl GameMap {
                                 if rng.gen_bool(FIRE_SPREAD_CHANCE) {
                                     let base_probability = self.data[y][x].terrain.burn_rate();
 
-                                    // add the global and local winds
-                                    let total_wind = global_wind_vec + self.data[x][y].wind;
-                                    let wind_angle = total_wind.to_angle();
-                                    let wind_strength = total_wind.length();
-
-                                    let delta_angle = wind_angle - NEIGHBOUR_VECTOR[idx];
-                                    let wind_factor = 1.0
-                                        + (wind_strength * 0.021 * (delta_angle.cos() - 1.0))
-                                            * (0.005 * wind_strength).exp();
+                                    // if local wind is set, use that and a slightly different relationship.
+                                    // TODO: could tidy this up to use f32/f32 or Vec2 for both.
+                                    // This is a hangover of an earlier implementation where I wanted to add the vecs
+                                    let wind_factor = if self.data[y][x].wind.length_squared() > 1.0
+                                    {
+                                        // here we check how close the wind and neighbour angles are.
+                                        // if the angles are close that means the wind factor shoudl be high
+                                        // if the angles are close to 180 degrees, then the fire is pushing
+                                        // directly into the wind and the wind factor should be basically 0.
+                                        let wind_angle = self.data[x][y].wind;
+                                        let delta_angle =
+                                            (wind_angle - NEIGHBOUR_VECTOR[idx]).to_angle().abs();
+                                        let ratio = delta_angle / std::f32::consts::FRAC_PI_2;
+                                        // (-2.5 * ratio).exp() // too much residual
+                                        // 1.0 - ratio.powf(0.5) // sqrt :shrug: but could be good
+                                        1.0 - ratio
+                                    } else {
+                                        // here we use the formula from the paper
+                                        let total_wind = global_wind_vec;
+                                        let delta_angle =
+                                            (total_wind - NEIGHBOUR_VECTOR[idx]).to_angle();
+                                        let wind_strength = total_wind.length();
+                                        1.0 + (wind_strength * 0.021 * (delta_angle.cos() - 1.0))
+                                            * (0.005 * wind_strength).exp()
+                                    };
 
                                     let moisture_factor = 1. - self.data[y][x].moisture;
 

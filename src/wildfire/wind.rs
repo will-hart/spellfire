@@ -44,7 +44,7 @@ impl std::fmt::Display for WindDirection {
         if cfg!(debug_assertions) {
             write!(
                 f,
-                "{:.0}kts, from {} [{}-->{}]",
+                "{:.0}kts, from {} [{:.1}-->{:.1}]",
                 self.strength,
                 self.compass(),
                 self.angle,
