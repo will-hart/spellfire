@@ -6,7 +6,6 @@ use bevy::{
     color::palettes::tailwind::{SLATE_700, SLATE_800},
     ecs::relationship::RelatedSpawnerCommands,
     input::common_conditions::input_just_pressed,
-    math::CompassOctant,
     prelude::*,
     time::common_conditions::on_timer,
     ui::Val::*,
@@ -564,20 +563,7 @@ fn update_toolbar(
         player_resource.mana, player_resource.mana_drain
     );
     lumber_text.0 = format!("{}", player_resource.lumber);
-    wind_text.0 = format!(
-        " | WIND: From {} / {} | {cell_state}",
-        match CompassOctant::from(Dir2::new(wind.0).expect("to dir")) {
-            CompassOctant::North => "N",
-            CompassOctant::NorthEast => "NE",
-            CompassOctant::East => "E",
-            CompassOctant::SouthEast => "SE",
-            CompassOctant::South => "S",
-            CompassOctant::SouthWest => "SW",
-            CompassOctant::West => "W",
-            CompassOctant::NorthWest => "NW",
-        },
-        wind.0
-    );
+    wind_text.0 = format!(" | WIND: {} | {cell_state}", *wind);
 }
 
 fn update_build_hint_ui(

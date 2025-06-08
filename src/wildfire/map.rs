@@ -87,7 +87,7 @@ pub(super) fn plugin(app: &mut App) {
 }
 
 fn update_map(mut map: ResMut<GameMap>, wind: Res<WindDirection>) {
-    map.update(wind.0);
+    map.update(wind.get_wind_vec());
 }
 
 fn update_sprites(mut map: ResMut<GameMap>, mut sprites: Query<&mut Sprite, With<TerrainCell>>) {
