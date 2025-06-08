@@ -9,7 +9,7 @@ Basic gameplay
 
 Building placement
 
-- [ ] disable invalid buttons (i.e. not enough resources)
+- [x] disable invalid buttons (i.e. not enough resources)
 - [x] add lumber mill building type
 - [x] child buildings get hurt by fire
 - [x] make sure building sprites are centered on grid coords
@@ -29,7 +29,7 @@ Fire sim
 
 - [x] slow it all down, using moisture but with more fuel
 
-Juice
+8. Juice
 
 - [ ] fireballs on mana forge detonation
 - [ ] animated power surge to child buildings through mana lines
@@ -41,16 +41,16 @@ Juice
 
 Polish
 
-- [ ] BALANCE
+7.- [ ] BALANCE
   - [ ] if you sequence buildings incorrectly you can get stuck (i.e. not enough for a lumber mill, not enough mana)
   - [ ] wind can make story mode too easy / too hard (should be controlled by scenario?)
-  - [ ] Make scnearios balanced and winnable in a few different ways
+  - [ ] Make scenarios balanced and winnable in a few different ways
 - [ ] more building types
-  - [ ] wind mage
-  - [ ] water mage
-- [ ] More scenarios
-- [ ] In story mode - zoom to city hall at the start of the game
-- [ ] show wind vane in the UI rather than text
+4.  - [ ] wind mage
+5.  - [ ] water mage
+6.- [ ] More scenarios
+2. - [ ] In story mode - zoom to city hall at the start of the game
+3. - [ ] show wind vane in the UI rather than text
 - [x] is wind even working?
 - [x] menu rejig
   - [x] tutorial on the main page
