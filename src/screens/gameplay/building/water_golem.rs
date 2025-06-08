@@ -146,10 +146,10 @@ impl WaterGolem {
                 // limit to trees and grass
                 |coord| {
                     // direct access ok here as we only have valid coords
-                    match map.data[coord.y as usize][coord.x as usize].terrain {
-                        TerrainType::Grassland | TerrainType::Tree => true,
-                        _ => false,
-                    }
+                    matches!(
+                        map.data[coord.y as usize][coord.x as usize].terrain,
+                        TerrainType::Grassland | TerrainType::Tree
+                    )
                 },
             )
             .collect::<Vec<_>>();
