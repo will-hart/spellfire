@@ -26,11 +26,13 @@ mod lumber_mill;
 mod mana_forge;
 mod mana_line;
 mod minotaur;
+mod water_golem;
 
 pub use city_hall::{CityHall, RequiresCityHall, SpawnCityHall};
 pub use lumber_mill::SpawnLumberMill;
 pub use mana_forge::SpawnManaForge;
 pub use minotaur::SpawnMinotaur;
+pub use water_golem::SpawnWaterGolem;
 
 pub const BUILDING_FOOTPRINT_OFFSETS: [IVec2; 4] = [
     IVec2::ZERO,
@@ -62,6 +64,7 @@ pub(super) fn plugin(app: &mut App) {
         mana_forge::plugin,
         mana_line::plugin,
         minotaur::plugin,
+        water_golem::plugin,
     ));
 
     app.add_systems(
@@ -87,6 +90,7 @@ pub enum BuildingType {
     ManaForge,
     Minotaur,
     LumberMill,
+    WaterGolem,
 }
 
 #[derive(Resource, Asset, Clone, Reflect)]
@@ -118,13 +122,15 @@ pub struct BuildingAssets {
     #[dependency]
     pub city_hall: Handle<Image>,
     #[dependency]
+    pub lightning: Handle<Image>,
+    #[dependency]
+    pub lumber_mill: Handle<Image>,
+    #[dependency]
     pub mana_forge: Handle<Image>,
     #[dependency]
     pub minotaur: Handle<Image>,
     #[dependency]
-    pub lightning: Handle<Image>,
-    #[dependency]
-    pub lumber_mill: Handle<Image>,
+    pub water_golem: Handle<Image>,
 }
 
 impl FromWorld for BuildingAssets {
@@ -134,6 +140,20 @@ impl FromWorld for BuildingAssets {
         Self {
             city_hall: assets.load_with_settings(
                 "images/city_hall.png",
+                |settings: &mut ImageLoaderSettings| {
+                    // Use `nearest` image sampling to preserve pixel art style.
+                    settings.sampler = ImageSampler::nearest();
+                },
+            ),
+            lightning: assets.load_with_settings(
+                "images/lightning.png",
+                |settings: &mut ImageLoaderSettings| {
+                    // Use `nearest` image sampling to preserve pixel art style.
+                    settings.sampler = ImageSampler::nearest();
+                },
+            ),
+            lumber_mill: assets.load_with_settings(
+                "images/lumbermill.png",
                 |settings: &mut ImageLoaderSettings| {
                     // Use `nearest` image sampling to preserve pixel art style.
                     settings.sampler = ImageSampler::nearest();
@@ -153,15 +173,8 @@ impl FromWorld for BuildingAssets {
                     settings.sampler = ImageSampler::nearest();
                 },
             ),
-            lightning: assets.load_with_settings(
-                "images/lightning.png",
-                |settings: &mut ImageLoaderSettings| {
-                    // Use `nearest` image sampling to preserve pixel art style.
-                    settings.sampler = ImageSampler::nearest();
-                },
-            ),
-            lumber_mill: assets.load_with_settings(
-                "images/lumbermill.png",
+            water_golem: assets.load_with_settings(
+                "images/water_golem.png",
                 |settings: &mut ImageLoaderSettings| {
                     // Use `nearest` image sampling to preserve pixel art style.
                     settings.sampler = ImageSampler::nearest();
@@ -231,7 +244,7 @@ fn burn_buildings(
                 BuildingType::CityHall => {
                     despawn_all = true;
                 }
-                BuildingType::Minotaur | BuildingType::LumberMill => {
+                BuildingType::Minotaur | BuildingType::LumberMill | BuildingType::WaterGolem => {
                     // no follow up booms
                     return;
                 }
@@ -285,7 +298,7 @@ fn handle_despawned_buildings(
         BuildingType::ManaForge => {
             resources.mana_drain -= 3;
         }
-        BuildingType::Minotaur => {
+        BuildingType::Minotaur | BuildingType::WaterGolem => {
             resources.mana_drain += 1;
         }
         BuildingType::LumberMill => {}

@@ -50,7 +50,7 @@ Polish
   - [ ] Make scenarios balanced and winnable in a few different ways
 - [ ] more building types
 4.  - [ ] wind mage
-5.  - [ ] water mage
+  - [x] water golem
 6.- [ ] More scenarios
 - [x] In story mode - zoom to city hall at the start of the game
 9. - [ ] show wind vane in the UI rather than text

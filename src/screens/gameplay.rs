@@ -9,7 +9,8 @@ use crate::{
     screens::{
         Screen,
         gameplay::building::{
-            ManaLine, ParentBuilding, SpawnCityHall, SpawnLumberMill, SpawnManaForge, SpawnMinotaur,
+            ManaLine, ParentBuilding, SpawnCityHall, SpawnLumberMill, SpawnManaForge,
+            SpawnMinotaur, SpawnWaterGolem,
         },
     },
     wildfire::{GameMap, OnLightningStrike},
@@ -20,7 +21,10 @@ pub mod story_mode;
 mod toolbar;
 mod victory;
 
-pub use building::{BuildingType, CityHall, RequiresCityHall};
+pub use building::{
+    BuildingType, CityHall, LUMBER_MILL_COST_LUMBER, MANA_FORGE_COST_LUMBER, MINOTAUR_COST_MANA,
+    RequiresCityHall, WATER_GOLEM_COST_MANA,
+};
 pub use toolbar::OnRedrawToolbar;
 
 pub(super) fn plugin(app: &mut App) {
@@ -109,7 +113,7 @@ impl Default for PlayerResources {
     }
 }
 
-#[derive(Resource, Reflect, Debug, Clone, Default)]
+#[derive(Resource, Reflect, Debug, Clone, Copy, Default)]
 #[reflect(Resource)]
 pub enum BuildingMode {
     #[default]
@@ -119,6 +123,21 @@ pub enum BuildingMode {
     PlaceLumberMill,
     PlaceManaForge,
     PlaceMinotaur,
+    PlaceWaterGolem,
+}
+
+impl From<BuildingMode> for BuildingType {
+    fn from(value: BuildingMode) -> Self {
+        match value {
+            BuildingMode::PlaceMinotaur => BuildingType::Minotaur,
+            BuildingMode::PlaceWaterGolem => BuildingType::WaterGolem,
+            BuildingMode::None
+            | BuildingMode::Lightning
+            | BuildingMode::PlaceCityHall
+            | BuildingMode::PlaceLumberMill
+            | BuildingMode::PlaceManaForge => unreachable!(),
+        }
+    }
 }
 
 fn unpause(mut next_pause: ResMut<NextState<Pause>>) {
@@ -165,6 +184,9 @@ fn handle_mouse_click_input(
         }
         BuildingMode::PlaceMinotaur => {
             commands.queue(SpawnMinotaur(mouse.world_pos));
+        }
+        BuildingMode::PlaceWaterGolem => {
+            commands.queue(SpawnWaterGolem(mouse.world_pos));
         }
     }
 }
@@ -274,10 +296,10 @@ fn handle_build_mode_changing(
                 },
             ));
         }
-        BuildingMode::PlaceMinotaur => {
-            info!("Spawning building mode items for minotaur placement");
+        next_mode @ BuildingMode::PlaceMinotaur | next_mode @ BuildingMode::PlaceWaterGolem => {
+            info!("Spawning building mode items for {mode:?} placement");
             commands.spawn((
-                ParentBuilding::new(BuildingType::Minotaur),
+                ParentBuilding::new(next_mode.into()),
                 CursorModeItem,
                 ManaLine {
                     from: Vec3::ZERO,

@@ -82,6 +82,7 @@ enum ToolbarButtonType {
     LumberMill,
     ManaForge,
     MinotaurHutch,
+    WaterGolem,
 }
 
 #[derive(Component, Reflect, Debug)]
@@ -253,6 +254,14 @@ fn _toolbar_buttons(
         BuildingMode::PlaceMinotaur,
         building_assets.minotaur.clone(),
         ToolbarButtonType::MinotaurHutch,
+    );
+
+    toolbar_button(
+        toolbar,
+        "Water Golem",
+        BuildingMode::PlaceWaterGolem,
+        building_assets.water_golem.clone(),
+        ToolbarButtonType::WaterGolem,
     );
 }
 
@@ -501,6 +510,14 @@ fn toolbar_data(toolbar_type: ToolbarButtonType) -> (HintMessage, HintMessage) {
                 details: "The minotaur inside consumes 1 mana / sec and turns trees into grass into dirt. Requires Mana Forge nearby.".into()
             },
             "Click the map to place a minotaur camp (close to a mana forge). Press <space> to cancel placement.".into()
+         ),
+         ToolbarButtonType::WaterGolem => (
+             HintMessage::BuildingData {
+                 name: "Water Golem".into(),
+                 cost: format!("{} Mana", WATER_GOLEM_COST_MANA),
+                 details: "The water golem inhabits the area, consuming 1 mana / sec to increase the moisture around the area. Wetter areas are harder to set alight. Requires Mana Forge nearby".into(),
+             },
+             "Click the map to place a water golem (close to a mana forge). Press <space> to cancel placement".into()
          )
     }
 }
