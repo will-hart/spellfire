@@ -54,14 +54,9 @@ impl std::fmt::Display for WindDirection {
 }
 
 impl WindDirection {
-    /// The current angle of the wind in degrees
-    pub fn angle_degrees(&self) -> f32 {
-        self.angle
-    }
-
-    /// The current strength of the wind in .... knots?
-    pub fn strength(&self) -> f32 {
-        self.strength
+    pub fn as_vec(&self) -> Vec2 {
+        (Quat::from_axis_angle(Vec3::Z, self.angle.to_radians()) * Vec3::X).truncate()
+            * self.strength
     }
 
     /// Gets the current wind direction as a vector

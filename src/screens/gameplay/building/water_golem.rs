@@ -1,4 +1,4 @@
-//! Logic + code for placing minotaur hutch buildings
+//! Logic + code for placing water golem buildings
 
 use bevy::{prelude::*, sprite::Anchor};
 use rand::Rng;
@@ -50,7 +50,7 @@ fn spawn_water_golem(
     parent_forge: Single<(Entity, &ParentBuilding)>,
     forges: Query<&Transform, With<ManaForge>>,
 ) {
-    if resources.mana < 30 {
+    if resources.mana < WATER_GOLEM_COST_MANA {
         warn!("Not enough resources to spawn water golem");
         return;
     }

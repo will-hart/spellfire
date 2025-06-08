@@ -81,7 +81,7 @@ pub(super) fn plugin(app: &mut App) {
             in_state(Screen::Gameplay)
                 .and(in_state(Pause(false)))
                 .and(resource_exists::<EndlessMode>)
-                .and(input_just_pressed(KeyCode::KeyR)),
+                .and(input_just_pressed(KeyCode::KeyM)),
         ),
     );
 }
@@ -370,9 +370,7 @@ impl GameMap {
         const MOISTURE_DECAY_RATE: f32 = 0.02;
 
         let mut rng = rand::thread_rng();
-
-        let global_wind_angle = global_wind.angle_degrees().to_radians();
-        let global_wind_strength = global_wind.strength();
+        let global_wind_vec = global_wind.as_vec();
 
         for y in 0..self.size_y {
             for x in 0..self.size_x {
@@ -409,15 +407,10 @@ impl GameMap {
                                 if rng.gen_bool(FIRE_SPREAD_CHANCE) {
                                     let base_probability = self.data[y][x].terrain.burn_rate();
 
-                                    // pick either the local wind override or the global
-                                    let (wind_angle, wind_strength) =
-                                        if let Some((local_angle, local_strength)) =
-                                            self.data[y][x].wind
-                                        {
-                                            (local_angle.to_radians(), local_strength)
-                                        } else {
-                                            (global_wind_angle, global_wind_strength)
-                                        };
+                                    // add the global and local winds
+                                    let total_wind = global_wind_vec + self.data[x][y].wind;
+                                    let wind_angle = total_wind.to_angle();
+                                    let wind_strength = total_wind.length();
 
                                     let delta_angle = wind_angle - NEIGHBOUR_VECTOR[idx];
                                     let wind_factor = 1.0

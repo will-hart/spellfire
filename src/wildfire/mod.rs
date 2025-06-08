@@ -153,14 +153,11 @@ impl std::fmt::Display for TerrainType {
     }
 }
 
-/// An alias for (angle_degrees, strength)
-pub type Wind = (f32, f32);
-
 /// The state of a given cell in the map
 #[derive(Debug, Copy, Clone, PartialEq, Reflect, Default)]
 pub struct TerrainCellState {
     pub terrain: TerrainType,
-    pub wind: Option<Wind>,
+    pub wind: Vec2,
     pub moisture: f32,
     pub fuel_load: u8,
 

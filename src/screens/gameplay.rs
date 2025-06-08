@@ -9,8 +9,8 @@ use crate::{
     screens::{
         Screen,
         gameplay::building::{
-            BuildingAssets, ManaLine, ParentBuilding, SpawnCityHall, SpawnLumberMill,
-            SpawnManaForge, SpawnMinotaur, SpawnWaterGolem,
+            BuildingAssets, MageRotation, ManaLine, ParentBuilding, SpawnCityHall, SpawnLumberMill,
+            SpawnManaForge, SpawnMinotaur, SpawnStormMage, SpawnWaterGolem,
         },
     },
     wildfire::{GameMap, OnLightningStrike},
@@ -23,7 +23,7 @@ mod victory;
 
 pub use building::{
     BuildingType, CityHall, LUMBER_MILL_COST_LUMBER, MANA_FORGE_COST_LUMBER, MINOTAUR_COST_MANA,
-    RequiresCityHall, WATER_GOLEM_COST_MANA,
+    RequiresCityHall, STORM_MAGE_COST_MANA, WATER_GOLEM_COST_MANA,
 };
 pub use toolbar::OnRedrawToolbar;
 
@@ -117,6 +117,10 @@ impl Default for PlayerResources {
 
 #[derive(Resource, Reflect, Debug, Clone, Copy, Default)]
 #[reflect(Resource)]
+pub struct StormMagePlacementRotation(pub MageRotation);
+
+#[derive(Resource, Reflect, Debug, Clone, Copy, Default)]
+#[reflect(Resource)]
 pub enum BuildingMode {
     #[default]
     None,
@@ -125,6 +129,7 @@ pub enum BuildingMode {
     PlaceLumberMill,
     PlaceManaForge,
     PlaceMinotaur,
+    PlaceStormMage,
     PlaceWaterGolem,
 }
 
@@ -133,6 +138,7 @@ impl From<BuildingMode> for BuildingType {
         match value {
             BuildingMode::PlaceMinotaur => BuildingType::Minotaur,
             BuildingMode::PlaceWaterGolem => BuildingType::WaterGolem,
+            BuildingMode::PlaceStormMage => BuildingType::StormMage,
             BuildingMode::None
             | BuildingMode::Lightning
             | BuildingMode::PlaceCityHall
@@ -154,6 +160,7 @@ fn handle_mouse_click_input(
     mut commands: Commands,
     mut mode: ResMut<BuildingMode>,
     mouse: Res<MousePosition>,
+    maybe_mage_rotation: Option<Res<StormMagePlacementRotation>>,
     maybe_requires_city_hall: Option<Res<RequiresCityHall>>,
     maybe_map: Option<Res<GameMap>>,
 ) {
@@ -186,6 +193,12 @@ fn handle_mouse_click_input(
         }
         BuildingMode::PlaceMinotaur => {
             commands.queue(SpawnMinotaur(mouse.world_pos));
+        }
+        BuildingMode::PlaceStormMage => {
+            commands.queue(SpawnStormMage(
+                mouse.world_pos,
+                maybe_mage_rotation.map(|r| r.0).unwrap_or_default(),
+            ));
         }
         BuildingMode::PlaceWaterGolem => {
             commands.queue(SpawnWaterGolem(mouse.world_pos));
@@ -298,6 +311,7 @@ fn handle_build_mode_changing(
     match *mode {
         BuildingMode::None => {
             hint.clear();
+            commands.remove_resource::<StormMagePlacementRotation>();
         }
         BuildingMode::Lightning => {}
         BuildingMode::PlaceCityHall => {
@@ -338,7 +352,9 @@ fn handle_build_mode_changing(
                 },
             ));
         }
-        next_mode @ BuildingMode::PlaceMinotaur | next_mode @ BuildingMode::PlaceWaterGolem => {
+        next_mode @ BuildingMode::PlaceMinotaur
+        | next_mode @ BuildingMode::PlaceWaterGolem
+        | next_mode @ BuildingMode::PlaceStormMage => {
             info!("Spawning building mode items for {mode:?} placement");
             commands.spawn((
                 ParentBuilding::new(next_mode.into()),
@@ -353,7 +369,12 @@ fn handle_build_mode_changing(
                     image: match next_mode {
                         BuildingMode::PlaceMinotaur => building_assets.minotaur.clone(),
                         BuildingMode::PlaceWaterGolem => building_assets.water_golem.clone(),
-                        _ => {
+                        BuildingMode::PlaceStormMage => building_assets.storm_mage.clone(),
+                        BuildingMode::None
+                        | BuildingMode::Lightning
+                        | BuildingMode::PlaceCityHall
+                        | BuildingMode::PlaceLumberMill
+                        | BuildingMode::PlaceManaForge => {
                             unreachable!();
                         }
                     },

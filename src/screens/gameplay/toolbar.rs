@@ -18,7 +18,8 @@ use crate::{
         BuildingMode, EndlessMode, PlayerResources, RequiresCityHall, Screen,
         gameplay::{
             BuildTextHint, BuildTextMarker, HintMessage, LUMBER_MILL_COST_LUMBER,
-            MANA_FORGE_COST_LUMBER, MINOTAUR_COST_MANA, WATER_GOLEM_COST_MANA,
+            MANA_FORGE_COST_LUMBER, MINOTAUR_COST_MANA, STORM_MAGE_COST_MANA,
+            WATER_GOLEM_COST_MANA,
             building::{BuildingAssets, ResourceAssets},
         },
     },
@@ -82,6 +83,7 @@ enum ToolbarButtonType {
     LumberMill,
     ManaForge,
     MinotaurHutch,
+    StormMage,
     WaterGolem,
 }
 
@@ -254,6 +256,14 @@ fn _toolbar_buttons(
         BuildingMode::PlaceMinotaur,
         building_assets.minotaur.clone(),
         ToolbarButtonType::MinotaurHutch,
+    );
+
+    toolbar_button(
+        toolbar,
+        "Storm Mage",
+        BuildingMode::PlaceStormMage,
+        building_assets.storm_mage.clone(),
+        ToolbarButtonType::StormMage,
     );
 
     toolbar_button(
@@ -511,14 +521,22 @@ fn toolbar_data(toolbar_type: ToolbarButtonType) -> (HintMessage, HintMessage) {
             },
             "Click the map to place a minotaur camp (close to a mana forge). Press <space> to cancel placement.".into()
          ),
+         ToolbarButtonType::StormMage => (
+             HintMessage::BuildingData {
+                 name: "Storm Mage".into(),
+                 cost: format!("{} Mana", STORM_MAGE_COST_MANA),
+                 details: "The Storm Mage calls down strong winds consuming 2 mana / sec and push the fire away in one direction. Requires Mana Forge nearby".into(),
+             },
+             "Click the map to place a storm mage (close to a mana forge). Press <space> to cancel placement or <r> to rotate.".into()
+         ),
          ToolbarButtonType::WaterGolem => (
              HintMessage::BuildingData {
                  name: "Water Golem".into(),
                  cost: format!("{} Mana", WATER_GOLEM_COST_MANA),
-                 details: "The water golem inhabits the area, consuming 1 mana / sec to increase the moisture around the area. Wetter areas are harder to set alight. Requires Mana Forge nearby".into(),
+                 details: "The Water Golem inhabits the area, consuming 1 mana / sec to increase the moisture around the area. Wetter areas are harder to set alight. Requires Mana Forge nearby".into(),
              },
              "Click the map to place a water golem (close to a mana forge). Press <space> to cancel placement".into()
-         )
+         ),
     }
 }
 
@@ -531,6 +549,7 @@ fn toolbar_button_disabled(
         ToolbarButtonType::LumberMill => resources.lumber < LUMBER_MILL_COST_LUMBER,
         ToolbarButtonType::ManaForge => resources.lumber < MANA_FORGE_COST_LUMBER,
         ToolbarButtonType::MinotaurHutch => resources.mana < MINOTAUR_COST_MANA,
+        ToolbarButtonType::StormMage => resources.mana < STORM_MAGE_COST_MANA,
         ToolbarButtonType::WaterGolem => resources.mana < WATER_GOLEM_COST_MANA,
     }
 }

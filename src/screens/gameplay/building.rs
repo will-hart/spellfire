@@ -5,6 +5,7 @@ use std::time::Duration;
 use bevy::{
     ecs::world::OnDespawn,
     image::{ImageLoaderSettings, ImageSampler},
+    input::common_conditions::input_just_pressed,
     prelude::*,
     time::common_conditions::on_timer,
 };
@@ -16,7 +17,7 @@ use crate::{
     input::MousePosition,
     screens::{
         PlayerResources, Screen,
-        gameplay::{BuildTextHint, building::mana_forge::ManaForge},
+        gameplay::{BuildTextHint, StormMagePlacementRotation, building::mana_forge::ManaForge},
     },
     wildfire::{GameMap, OnLightningStrike},
 };
@@ -26,12 +27,14 @@ mod lumber_mill;
 mod mana_forge;
 mod mana_line;
 mod minotaur;
+mod storm_mage;
 mod water_golem;
 
 pub use city_hall::{CityHall, RequiresCityHall, SpawnCityHall};
 pub use lumber_mill::SpawnLumberMill;
 pub use mana_forge::SpawnManaForge;
 pub use minotaur::SpawnMinotaur;
+pub use storm_mage::{MageRotation, SpawnStormMage};
 pub use water_golem::SpawnWaterGolem;
 
 pub const BUILDING_FOOTPRINT_OFFSETS: [IVec2; 4] = [
@@ -44,6 +47,7 @@ pub const BUILDING_FOOTPRINT_OFFSETS: [IVec2; 4] = [
 pub const LUMBER_MILL_COST_LUMBER: i32 = 30;
 pub const MANA_FORGE_COST_LUMBER: i32 = 40;
 pub const MINOTAUR_COST_MANA: i32 = 35;
+pub const STORM_MAGE_COST_MANA: i32 = 40;
 pub const WATER_GOLEM_COST_MANA: i32 = 30;
 
 pub(super) fn plugin(app: &mut App) {
@@ -64,6 +68,7 @@ pub(super) fn plugin(app: &mut App) {
         mana_forge::plugin,
         mana_line::plugin,
         minotaur::plugin,
+        storm_mage::plugin,
         water_golem::plugin,
     ));
 
@@ -72,6 +77,10 @@ pub(super) fn plugin(app: &mut App) {
         ((
             burn_buildings.run_if(on_timer(Duration::from_millis(100))),
             track_building_parent_while_placing,
+            rotate_storm_mage.run_if(
+                input_just_pressed(KeyCode::KeyR)
+                    .and(resource_exists::<StormMagePlacementRotation>),
+            ),
         )
             .run_if(
                 in_state(Pause(false))
@@ -90,6 +99,7 @@ pub enum BuildingType {
     ManaForge,
     Minotaur,
     LumberMill,
+    StormMage,
     WaterGolem,
 }
 
@@ -130,6 +140,8 @@ pub struct BuildingAssets {
     #[dependency]
     pub minotaur: Handle<Image>,
     #[dependency]
+    pub storm_mage: Handle<Image>,
+    #[dependency]
     pub water_golem: Handle<Image>,
 }
 
@@ -168,6 +180,13 @@ impl FromWorld for BuildingAssets {
             ),
             minotaur: assets.load_with_settings(
                 "images/minotaur.png",
+                |settings: &mut ImageLoaderSettings| {
+                    // Use `nearest` image sampling to preserve pixel art style.
+                    settings.sampler = ImageSampler::nearest();
+                },
+            ),
+            storm_mage: assets.load_with_settings(
+                "images/storm_mage.png",
                 |settings: &mut ImageLoaderSettings| {
                     // Use `nearest` image sampling to preserve pixel art style.
                     settings.sampler = ImageSampler::nearest();
@@ -244,7 +263,10 @@ fn burn_buildings(
                 BuildingType::CityHall => {
                     despawn_all = true;
                 }
-                BuildingType::Minotaur | BuildingType::LumberMill | BuildingType::WaterGolem => {
+                BuildingType::Minotaur
+                | BuildingType::LumberMill
+                | BuildingType::WaterGolem
+                | BuildingType::StormMage => {
                     // no follow up booms
                     return;
                 }
@@ -298,11 +320,18 @@ fn handle_despawned_buildings(
         BuildingType::ManaForge => {
             resources.mana_drain -= 3;
         }
+        BuildingType::StormMage => {
+            resources.mana_drain -= 2;
+        }
         BuildingType::Minotaur | BuildingType::WaterGolem => {
             resources.mana_drain += 1;
         }
         BuildingType::LumberMill => {}
     }
+}
+
+fn rotate_storm_mage(mut mode: ResMut<StormMagePlacementRotation>) {
+    mode.0 = mode.0.next();
 }
 
 fn track_building_parent_while_placing(
