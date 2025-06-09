@@ -71,6 +71,7 @@ Polish
 
 Probably out of scope for jam
 
+- [ ] make toolbar resoures less "twitchy" - update the amount continuously but only display the new resources every now and then?
 - [ ] show wind vane in the UI rather than text
 - [ ] main menu - show a fire in the background or something a bit more interesting
 - [ ] redraw map without respawning sprites (see map::redraw_map system) - possibly use a texture?
