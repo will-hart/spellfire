@@ -130,6 +130,8 @@ impl LumberMill {
     }
 }
 
+const CHANCE_LUMBER_MILL_PLANTS_TREE: f64 = 0.15;
+
 fn produce_from_lumber_mill(
     time: Res<Time>,
     mut map: ResMut<GameMap>,
@@ -140,7 +142,7 @@ fn produce_from_lumber_mill(
     let mut rng = rand::thread_rng();
 
     for (loc, mut mill) in &mut mills {
-        let (target_terrain, new_terrain) = if rng.gen_bool(0.25) {
+        let (target_terrain, new_terrain) = if rng.gen_bool(CHANCE_LUMBER_MILL_PLANTS_TREE) {
             (TerrainType::Grassland, TerrainType::Tree)
         } else {
             (TerrainType::Tree, TerrainType::Grassland)
