@@ -44,9 +44,9 @@ pub const BUILDING_FOOTPRINT_OFFSETS: [IVec2; 4] = [
 
 pub const LUMBER_MILL_COST_LUMBER: i32 = 30;
 pub const MANA_FORGE_COST_LUMBER: i32 = 40;
-pub const MINOTAUR_COST_MANA: i32 = 35;
-pub const STORM_MAGE_COST_MANA: i32 = 40;
-pub const WATER_GOLEM_COST_MANA: i32 = 30;
+pub const MINOTAUR_COST_MANA: i32 = 30;
+pub const STORM_MAGE_COST_MANA: i32 = 50;
+pub const WATER_GOLEM_COST_MANA: i32 = 20;
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<BuildingAssets>();

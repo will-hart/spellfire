@@ -1,8 +1,12 @@
 //! Logic + code for placing storm mages buildings
 
-use bevy::{ecs::world::OnDespawn, prelude::*, sprite::Anchor};
+use bevy::{
+    color::palettes::tailwind::SLATE_500, ecs::world::OnDespawn, prelude::*, sprite::Anchor,
+};
+use bevy_vector_shapes::{prelude::ShapePainter, shapes::RectPainter};
 
 use crate::{
+    Pause,
     screens::{
         PlayerResources, Screen,
         gameplay::{
@@ -20,6 +24,13 @@ use crate::{
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<StormMage>();
     app.add_observer(remove_storm_mage);
+
+    app.add_systems(
+        Update,
+        draw_mage_areas.run_if(
+            in_state(Screen::Gameplay).and(in_state(Pause(false)).and(resource_exists::<GameMap>)),
+        ),
+    );
 }
 
 fn remove_storm_mage(
@@ -99,7 +110,10 @@ fn spawn_storm_mage(
         return;
     };
 
-    let mut mage = StormMage::default();
+    let mut mage = StormMage {
+        rotation: config.1,
+        ..default()
+    };
     mage.apply_to_map(coords, config.1, &mut map);
 
     commands.spawn((
@@ -138,6 +152,38 @@ fn spawn_storm_mage(
     *building_mode = BuildingMode::None;
 }
 
+/// draws a box where mages are
+// #[hot]
+fn draw_mage_areas(
+    mut painter: ShapePainter,
+    map: Res<GameMap>,
+    mages: Query<(&Transform, &StormMage)>,
+) {
+    let original_tx = painter.transform;
+
+    for (tx, mage) in &mages {
+        let (width, height) = match mage.rotation {
+            MageRotation::Left | MageRotation::Right => (
+                10.0 * map.sprite_size,
+                2.0 * mage.range as f32 * map.sprite_size,
+            ),
+            MageRotation::Up | MageRotation::Down => (
+                2.0 * mage.range as f32 * map.sprite_size,
+                10.0 * map.sprite_size,
+            ),
+        };
+
+        let mut color = SLATE_500;
+        color.alpha = 0.1;
+
+        painter.set_color(color);
+        painter
+            .translate(tx.translation + mage.rotation.to_vec().extend(0.0) * 6.0 * map.sprite_size);
+        painter.rect(Vec2::new(width, height));
+        painter.transform = original_tx;
+    }
+}
+
 /// A mana producing building
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
@@ -148,6 +194,8 @@ pub struct StormMage {
     wind: Vec2,
     /// The range that the storm mage works in
     range: i32,
+    /// The current rotation of the mage
+    rotation: MageRotation,
 }
 
 impl Default for StormMage {
@@ -156,6 +204,7 @@ impl Default for StormMage {
             cells: Vec::new(),
             wind: Vec2::ZERO,
             range: 10,
+            rotation: MageRotation::default(),
         }
     }
 }
@@ -190,13 +239,19 @@ impl MageRotation {
         }
     }
 
-    pub fn to_wind(&self, strength: f32) -> Vec2 {
+    /// Converts this rotation to a Vec2
+    pub fn to_vec(&self) -> Vec2 {
         match self {
-            MageRotation::Left => Vec2::new(-strength, 0.0),
-            MageRotation::Up => Vec2::new(0.0, strength),
-            MageRotation::Right => Vec2::new(strength, 0.0),
-            MageRotation::Down => Vec2::new(0.0, -strength),
+            MageRotation::Left => Vec2::new(-1.0, 0.0),
+            MageRotation::Up => Vec2::new(0.0, 1.0),
+            MageRotation::Right => Vec2::new(1.0, 0.0),
+            MageRotation::Down => Vec2::new(0.0, -1.0),
         }
+    }
+
+    /// Takes the vec and multiplies by the strength
+    pub fn to_wind(&self, strength: f32) -> Vec2 {
+        self.to_vec() * strength
     }
 }
 

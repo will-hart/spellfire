@@ -424,9 +424,11 @@ impl GameMap {
                                         let delta_angle =
                                             (wind_angle - NEIGHBOUR_VECTOR[idx]).to_angle().abs();
                                         let ratio = delta_angle / std::f32::consts::FRAC_PI_2;
-                                        // (-2.5 * ratio).exp() // too much residual
-                                        // 1.0 - ratio.powf(0.5) // sqrt :shrug: but could be good
-                                        1.0 - ratio
+
+                                        // sharp drop-off but make sure its 0 chance of spreading from about right angles
+                                        // to the wind onwards
+                                        let factor = (-5.0 * ratio).exp();
+                                        if factor < 0.1 { 0. } else { factor }
                                     } else {
                                         // here we use the formula from the paper
                                         let total_wind = global_wind_vec;
