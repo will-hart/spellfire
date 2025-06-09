@@ -124,7 +124,39 @@ pub fn get_level_data(lvl: usize) -> Option<StoryModeLevel> {
             ]
             .into(),
 
-            wind_speed: 15.0,
+            wind_speed: 14.0,
+            wind_angle: 32.0,
+            elapsed_time: 0.0,
+        })
+    } else if lvl == 3 {
+        Some(StoryModeLevel {
+            level_number: lvl,
+            map_seed: GOOD_SEEDS[lvl - 1],
+            starting_location: IVec2 { x: 27, y: 228 },
+            bolts: vec![
+                (21.0, IVec2 { x: 242, y: 98 }),
+                (50.0, IVec2 { x: 3, y: 30 }),
+            ]
+            .into(),
+
+            wind_speed: 13.0,
+            wind_angle: 32.0,
+            elapsed_time: 0.0,
+        })
+    } else if lvl == 4 {
+        Some(StoryModeLevel {
+            level_number: lvl,
+            map_seed: GOOD_SEEDS[lvl - 1],
+            starting_location: IVec2 { x: 187, y: 195 },
+            bolts: vec![
+                (21.0, IVec2 { x: 68, y: 210 }),
+                (21.0, IVec2 { x: 67, y: 212 }),
+                (23.0, IVec2 { x: 63, y: 214 }),
+                (23.0, IVec2 { x: 61, y: 208 }),
+            ]
+            .into(),
+
+            wind_speed: 13.0,
             wind_angle: 32.0,
             elapsed_time: 0.0,
         })
