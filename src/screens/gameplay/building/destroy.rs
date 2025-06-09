@@ -17,10 +17,7 @@ use crate::{
         BuildingType, PlayerResources, Screen,
         gameplay::{
             BuildTextHint,
-            building::{
-                BuildingAssets, BuildingLocation, ManaEntityLink, ManaLine,
-                WATER_GOLEM_MANA_CONSUMPTION,
-            },
+            building::{BuildingAssets, BuildingLocation, ManaEntityLink, ManaLine},
         },
     },
     wildfire::{Fireball, GameMap, MeteorAssets, TerrainType},
