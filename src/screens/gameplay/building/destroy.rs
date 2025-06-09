@@ -35,7 +35,8 @@ pub(super) fn plugin(app: &mut App) {
             .run_if(
                 in_state(Pause(false))
                     .and(in_state(Screen::Gameplay))
-                    .and(resource_exists::<PlayerResources>),
+                    .and(resource_exists::<PlayerResources>)
+                    .and(resource_exists::<GameMap>),
             ),
     );
 

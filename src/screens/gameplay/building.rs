@@ -75,7 +75,7 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(
         Update,
         ((
-            track_building_parent_while_placing,
+            track_building_parent_while_placing.run_if(resource_exists::<GameMap>),
             rotate_storm_mage.run_if(
                 input_just_pressed(KeyCode::KeyR)
                     .and(resource_exists::<StormMagePlacementRotation>),

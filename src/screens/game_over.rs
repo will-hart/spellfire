@@ -4,7 +4,7 @@ use bevy::prelude::*;
 
 use crate::asset_tracking::LoadResource;
 use crate::audio::sound_effect;
-use crate::screens::Screen;
+use crate::screens::{EndlessMode, NextStoryLevel, Screen, get_level_data};
 use crate::theme::widget;
 
 pub(super) fn plugin(app: &mut App) {
@@ -14,7 +14,18 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Screen::GameOver), spawn_game_over_screen);
 }
 
-fn spawn_game_over_screen(mut commands: Commands, game_over_assets: Res<GameOverAssets>) {
+fn spawn_game_over_screen(
+    mut commands: Commands,
+    game_over_assets: Res<GameOverAssets>,
+    maybe_endless: Option<Res<EndlessMode>>,
+    maybe_next_story: Option<Res<NextStoryLevel>>,
+) {
+    let show_try_again = maybe_endless.is_some()
+        || match maybe_next_story {
+            Some(next) => get_level_data(next.0).is_some(),
+            _ => false,
+        };
+
     commands.spawn(sound_effect(game_over_assets.defeated.clone()));
 
     commands
@@ -30,12 +41,15 @@ fn spawn_game_over_screen(mut commands: Commands, game_over_assets: Res<GameOver
             ],
         ))
         .with_children(|parent| {
-            parent.spawn((widget::button(
-                "Try Again?",
-                |_trigger: Trigger<Pointer<Click>>, mut next: ResMut<NextState<Screen>>| {
-                    next.set(Screen::Gameplay);
-                },
-            ),));
+            if show_try_again {
+                parent.spawn((widget::button(
+                    "Try Again?",
+                    |_trigger: Trigger<Pointer<Click>>, mut next: ResMut<NextState<Screen>>| {
+                        next.set(Screen::Gameplay);
+                    },
+                ),));
+            }
+
             parent.spawn(widget::button(
                 "Flee to the menu",
                 |_trigger: Trigger<Pointer<Click>>, mut next: ResMut<NextState<Screen>>| {

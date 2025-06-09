@@ -47,8 +47,8 @@ Juice
 
 Polish
 
-1.- [ ] BALANCE
-  - [ ] Make scenarios balanced and winnable in a few different ways
+1.- [x] BALANCE
+  - [x] Make scenarios balanced and winnable in a few different ways
   - [x] wind can make story mode too easy / too hard (should be controlled by scenario?)
   - [x] if you sequence buildings incorrectly you can get stuck (i.e. not enough for a lumber mill, not enough mana)
         potential solution - set initial lumber to low enough that you can't buy a mana forge? or maybe enough for one of each
