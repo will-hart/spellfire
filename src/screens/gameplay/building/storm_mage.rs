@@ -131,7 +131,7 @@ fn spawn_storm_mage(
         },
         StateScoped(Screen::Gameplay),
         Transform::from_xyz(world_coords.x, world_coords.y, 0.1).with_rotation(
-            Quat::from_axis_angle(Vec3::Z, mage_rotation.0.to_angle_rads()),
+            Quat::from_axis_angle(Vec3::Z, mage_rotation.0.as_angle_rads()),
         ),
         Visibility::Visible,
         Sprite {
@@ -178,7 +178,7 @@ fn draw_mage_areas(
 
         painter.set_color(color);
         painter
-            .translate(tx.translation + mage.rotation.to_vec().extend(0.0) * 6.0 * map.sprite_size);
+            .translate(tx.translation + mage.rotation.as_vec().extend(0.0) * 6.0 * map.sprite_size);
         painter.rect(Vec2::new(width, height));
         painter.transform = original_tx;
     }
@@ -230,7 +230,7 @@ impl MageRotation {
     }
 
     /// Gets the rotation of this mage in radians
-    pub fn to_angle_rads(&self) -> f32 {
+    pub fn as_angle_rads(&self) -> f32 {
         match self {
             MageRotation::Left => std::f32::consts::FRAC_PI_2,
             MageRotation::Up => 0.0,
@@ -240,7 +240,7 @@ impl MageRotation {
     }
 
     /// Converts this rotation to a Vec2
-    pub fn to_vec(&self) -> Vec2 {
+    pub fn as_vec(&self) -> Vec2 {
         match self {
             MageRotation::Left => Vec2::new(-1.0, 0.0),
             MageRotation::Up => Vec2::new(0.0, 1.0),
@@ -250,8 +250,8 @@ impl MageRotation {
     }
 
     /// Takes the vec and multiplies by the strength
-    pub fn to_wind(&self, strength: f32) -> Vec2 {
-        self.to_vec() * strength
+    pub fn as_wind(&self, strength: f32) -> Vec2 {
+        self.as_vec() * strength
     }
 }
 
@@ -274,7 +274,7 @@ impl StormMage {
 
     /// applies the effects of the storm mage to the map
     pub fn apply_to_map(&mut self, mage_cell: IVec2, rotation: MageRotation, map: &mut GameMap) {
-        self.wind = rotation.to_wind(2000.0);
+        self.wind = rotation.as_wind(2000.0);
 
         for cell in Self::get_relevant_cells(rotation, self.range) {
             let Some(map_cell) = map.get_mut(cell + mage_cell) else {

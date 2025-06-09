@@ -382,7 +382,7 @@ fn handle_build_mode_changing(
                     ManaLine::new(Vec3::ZERO, Vec3::ZERO),
                     Transform::from_rotation(Quat::from_axis_angle(
                         Vec3::Z,
-                        MageRotation::default().to_angle_rads(),
+                        MageRotation::default().as_angle_rads(),
                     )),
                     Sprite {
                         image: building_assets.storm_mage.clone(),
