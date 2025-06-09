@@ -104,9 +104,9 @@ pub fn get_level_data(lvl: usize) -> Option<StoryModeLevel> {
             starting_location: IVec2 { x: 168, y: 243 },
             bolts: vec![
                 (10.0, IVec2 { x: 21, y: 46 }),
-                (19.0, IVec2 { x: 27, y: 175 }),
-                (19.2, IVec2 { x: 29, y: 177 }),
-                (19.2, IVec2 { x: 25, y: 173 }),
+                (30.0, IVec2 { x: 27, y: 175 }),
+                (30.2, IVec2 { x: 29, y: 177 }),
+                (30.2, IVec2 { x: 25, y: 173 }),
             ]
             .into(),
             wind_speed: 15.0,

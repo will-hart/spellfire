@@ -563,7 +563,7 @@ fn toolbar_data(toolbar_type: ToolbarButtonType) -> (HintMessage, HintMessage) {
             HintMessage::BuildingData {
                 name: "Lumber Mill".into(),
                 cost: format!("{LUMBER_MILL_COST_LUMBER} Lumber"),
-                details: "Produces Lumber from nearby trees every (0.5 sec), with a 25% chance to plant a tree instead. Can be placed anywhere, but best in a forest!".into(),
+                details: "Produces 2 Lumber from nearby trees every (1 sec), with a 25% chance to plant a tree instead. Can be placed anywhere, but best in a forest!".into(),
             },
             "Produces Lumber from nearby trees every (0.5 sec), with a 25% chance to plant a tree instead. Can be placed anywhere, but best in a forest!".into()
         ),
@@ -571,7 +571,7 @@ fn toolbar_data(toolbar_type: ToolbarButtonType) -> (HintMessage, HintMessage) {
             HintMessage::BuildingData {
                  name: "Mana Forge".into(),
                  cost: format!("{MANA_FORGE_COST_LUMBER} Lumber"),
-                 details: "MANA FORGE. Cost: 50 Lumber. Produces Mana (3/sec), required for most other buildings.".into()
+                 details: "MANA FORGE. Cost: 50 Lumber. Produces Mana (5/sec), required for most other buildings.".into()
             },
              "Click the map to place a forge. Press <space> to cancel placement.".into()
          ),

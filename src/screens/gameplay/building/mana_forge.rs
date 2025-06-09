@@ -117,7 +117,7 @@ pub struct ManaForge {
 impl Default for ManaForge {
     fn default() -> Self {
         Self {
-            mana_per_second: 3,
+            mana_per_second: 5,
             time_since_last_tick: 0.,
         }
     }

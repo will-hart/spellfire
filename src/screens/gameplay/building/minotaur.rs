@@ -120,13 +120,14 @@ fn spawn_minotaur(
 pub struct Minotaur {
     /// The time the minotaur was last updated
     time_since_last_tick: f32,
+    /// The elapsed time since the minotaur last consumed mana
+    time_since_last_consumed: f32,
     /// The offset from the building location to describe where this minotaur
     /// currently is
+    /// TODO: this is no longer necessary, could be done similar to water golem
     location: IVec2,
     /// The range of the minotaur (i.e. distance from the building location)
     range: i32,
-    /// Whether the minotaur consumed mana last tick
-    consumed_last_tick: bool,
 }
 
 impl Default for Minotaur {
@@ -135,7 +136,7 @@ impl Default for Minotaur {
             time_since_last_tick: 0.0,
             location: IVec2::ZERO,
             range: 6,
-            consumed_last_tick: true,
+            time_since_last_consumed: 0.0,
         }
     }
 }
@@ -171,6 +172,9 @@ impl Minotaur {
     }
 }
 
+const MANA_CONSUMPTION_TIME: f32 = 1.0;
+const PRODUCTION_TIME: f32 = 0.3;
+
 // #[cfg_attr(target_os = "macos", hot)]
 fn produce_from_minotaur(
     time: Res<Time>,
@@ -181,23 +185,27 @@ fn produce_from_minotaur(
     let delta = time.delta_secs();
 
     for (loc, mut minotaur) in &mut forges {
-        if minotaur.time_since_last_tick + delta <= 0.5 {
-            minotaur.time_since_last_tick += delta;
-            continue;
-        }
+        // consume mana if its time
+        minotaur.time_since_last_consumed += delta;
+        if minotaur.time_since_last_consumed >= MANA_CONSUMPTION_TIME {
+            minotaur.time_since_last_consumed -= MANA_CONSUMPTION_TIME;
 
-        minotaur.time_since_last_tick = 0.0;
-
-        // check if we have enough mana
-        if !minotaur.consumed_last_tick {
+            // if we dont have enough, don't produce until we've recharged mana
             if resources.mana <= 0 {
                 info!("Not enough mana to produce from minotaur at {}", loc.0);
+                minotaur.time_since_last_tick = -MANA_CONSUMPTION_TIME + PRODUCTION_TIME;
                 continue;
             }
+
             resources.mana = (resources.mana - 1).max(0);
         }
 
-        minotaur.consumed_last_tick = !minotaur.consumed_last_tick;
+        // check if its time for the minotaur to eat
+        minotaur.time_since_last_tick += delta;
+        if minotaur.time_since_last_tick + delta < PRODUCTION_TIME {
+            continue;
+        }
+        minotaur.time_since_last_tick -= PRODUCTION_TIME;
 
         // reduce the current cell
         if let Some(current) = map.get_mut(minotaur.location) {

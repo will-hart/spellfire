@@ -167,7 +167,7 @@ fn produce_from_lumber_mill(
                 current.mark_dirty();
 
                 if new_terrain == TerrainType::Grassland {
-                    resources.lumber += 1;
+                    resources.lumber += 2;
                 }
             }
             TerrainType::Dirt
