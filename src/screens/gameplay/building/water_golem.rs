@@ -1,6 +1,7 @@
 //! Logic + code for placing water golem buildings
 
-use bevy::{prelude::*, sprite::Anchor};
+use bevy::{color::palettes::tailwind::INDIGO_600, prelude::*, sprite::Anchor};
+use bevy_vector_shapes::{prelude::ShapePainter, shapes::DiscPainter};
 use rand::Rng;
 
 use crate::{
@@ -29,6 +30,13 @@ pub(super) fn plugin(app: &mut App) {
                 .and(in_state(Screen::Gameplay))
                 .and(resource_exists::<PlayerResources>)
                 .and(resource_exists::<GameMap>),
+        ),
+    );
+
+    app.add_systems(
+        Update,
+        draw_golem_areas.run_if(
+            in_state(Screen::Gameplay).and(in_state(Pause(false)).and(resource_exists::<GameMap>)),
         ),
     );
 }
@@ -129,7 +137,7 @@ impl Default for WaterGolem {
     fn default() -> Self {
         Self {
             time_since_last_tick: 0.0,
-            range: 6,
+            range: 3,
         }
     }
 }
@@ -160,6 +168,25 @@ impl WaterGolem {
         let mut rng = rand::thread_rng();
         let idx = rng.gen_range(0..coords.len());
         Some(coords[idx])
+    }
+}
+
+fn draw_golem_areas(
+    mut painter: ShapePainter,
+    map: Res<GameMap>,
+    golems: Query<(&Transform, &WaterGolem)>,
+) {
+    let original_tx = painter.transform;
+
+    for (tx, golem) in &golems {
+        let mut color = INDIGO_600;
+        color.alpha = 0.2;
+
+        painter.set_color(color);
+        painter.translate(tx.translation - Vec3::new(0.0, 0.0, 0.05));
+        painter.circle(golem.range as f32 * map.sprite_size);
+
+        painter.transform = original_tx;
     }
 }
 

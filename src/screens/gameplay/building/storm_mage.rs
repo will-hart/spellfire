@@ -177,8 +177,10 @@ fn draw_mage_areas(
         color.alpha = 0.1;
 
         painter.set_color(color);
-        painter
-            .translate(tx.translation + mage.rotation.as_vec().extend(0.0) * 6.0 * map.sprite_size);
+        painter.translate(
+            tx.translation + mage.rotation.as_vec().extend(0.0) * 6.0 * map.sprite_size
+                - Vec3::new(0.0, 0.0, 0.05),
+        );
         painter.rect(Vec2::new(width, height));
         painter.transform = original_tx;
     }
