@@ -64,6 +64,10 @@ fn spawn_game_over_screen(
 pub struct GameOverAssets {
     #[dependency]
     defeated: Handle<AudioSource>,
+    #[dependency]
+    pub you_won: Handle<AudioSource>,
+    #[dependency]
+    pub you_survived: Handle<AudioSource>,
 }
 
 impl FromWorld for GameOverAssets {
@@ -71,6 +75,8 @@ impl FromWorld for GameOverAssets {
         let assets = world.resource::<AssetServer>();
         Self {
             defeated: assets.load("audio/sound_effects/you_are_defeated.ogg"),
+            you_won: assets.load("audio/sound_effects/you_won.ogg"),
+            you_survived: assets.load("audio/sound_effects/you_survived.ogg"),
         }
     }
 }
