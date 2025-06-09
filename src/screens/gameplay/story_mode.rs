@@ -119,8 +119,8 @@ pub fn get_level_data(lvl: usize) -> Option<StoryModeLevel> {
             map_seed: GOOD_SEEDS[lvl - 1],
             starting_location: IVec2 { x: 27, y: 228 },
             bolts: vec![
-                (20.0, IVec2 { x: 29, y: 177 }),
-                (21.0, IVec2 { x: 175, y: 17 }),
+                (21.0, IVec2 { x: 242, y: 98 }),
+                (50.0, IVec2 { x: 3, y: 30 }),
             ]
             .into(),
 
