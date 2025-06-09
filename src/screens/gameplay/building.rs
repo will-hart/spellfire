@@ -276,7 +276,7 @@ fn rotate_storm_mage(
     info!("Rotated storm mage to {:?}", mage_rotation.0);
 
     for mut tx in &mut follower {
-        tx.rotation = Quat::from_axis_angle(Vec3::Z, mage_rotation.0.to_angle_rads());
+        tx.rotation = Quat::from_axis_angle(Vec3::Z, mage_rotation.0.as_angle_rads());
     }
 }
 

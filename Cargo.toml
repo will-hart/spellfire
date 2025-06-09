@@ -1,7 +1,7 @@
 [package]
 name = "spellfire"
 authors = ["William Hart <391950+will-hart@users.noreply.github.com>"]
-version = "0.5.0"
+version = "1.0.0"
 edition = "2024"
 
 [dependencies]
