@@ -84,7 +84,7 @@ fn spawn_main_menu(mut commands: Commands, asset_server: Res<AssetServer>) {
                         TextColor(SLATE_300.into()),
                     ),
                     (
-                        Text::new("Protect your City Hall at all costs. Place buildings on the map (see the tooltips) to produce mana and harvest lumber. Summon creatures to defend your City Hall against the raging wildfire!"),
+                        Text::new("Protect your City Hall at all costs. Place buildings on the map (see the tooltips) to produce mana and harvest lumber. Summon creatures to defend your City Hall against the raging wildfire! Survive until the fire is out to win! (in endless mode press <m> to reset the map)"),
                         TextFont::from_font_size(20.0),
                         TextColor(SLATE_300.into()),
                     )
