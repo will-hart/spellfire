@@ -4,7 +4,7 @@ use bevy::prelude::*;
 
 use crate::asset_tracking::LoadResource;
 use crate::audio::sound_effect;
-use crate::screens::{EndlessMode, Screen};
+use crate::screens::Screen;
 use crate::theme::widget;
 
 pub(super) fn plugin(app: &mut App) {
@@ -14,11 +14,7 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(OnEnter(Screen::GameOver), spawn_game_over_screen);
 }
 
-fn spawn_game_over_screen(
-    mut commands: Commands,
-    maybe_endless_mode: Option<Res<EndlessMode>>,
-    game_over_assets: Res<GameOverAssets>,
-) {
+fn spawn_game_over_screen(mut commands: Commands, game_over_assets: Res<GameOverAssets>) {
     commands.spawn(sound_effect(game_over_assets.defeated.clone()));
 
     commands
@@ -34,14 +30,12 @@ fn spawn_game_over_screen(
             ],
         ))
         .with_children(|parent| {
-            if maybe_endless_mode.is_some() {
-                parent.spawn((widget::button(
-                    "Try Again?",
-                    |_trigger: Trigger<Pointer<Click>>, mut next: ResMut<NextState<Screen>>| {
-                        next.set(Screen::Gameplay);
-                    },
-                ),));
-            }
+            parent.spawn((widget::button(
+                "Try Again?",
+                |_trigger: Trigger<Pointer<Click>>, mut next: ResMut<NextState<Screen>>| {
+                    next.set(Screen::Gameplay);
+                },
+            ),));
             parent.spawn(widget::button(
                 "Flee to the menu",
                 |_trigger: Trigger<Pointer<Click>>, mut next: ResMut<NextState<Screen>>| {
