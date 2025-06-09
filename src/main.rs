@@ -14,7 +14,7 @@ mod screens;
 mod theme;
 mod wildfire;
 
-use bevy::{asset::AssetMetaCheck, color::palettes::css::BLACK, prelude::*};
+use bevy::{asset::AssetMetaCheck, prelude::*};
 // use bevy_simple_subsecond_system::prelude::*;
 
 use bevy_vector_shapes::Shape2dPlugin;
@@ -47,8 +47,6 @@ impl Plugin for AppPlugin {
                     ..default()
                 }),
         );
-
-        app.insert_resource(ClearColor(BLACK.into()));
 
         // Add other plugins.
         app.add_plugins((
