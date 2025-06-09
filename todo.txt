@@ -81,6 +81,7 @@ Probably out of scope for jam
 
 Bugs
 
+- [x] lumber mills don't get destroyed by fire
 - [x] Storm mage doesn't seem to work?
 - [x] Resources don't reset when hitting "M" for new endless mode map
 - [x] can place buildings off the map

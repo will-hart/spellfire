@@ -9,7 +9,7 @@ use crate::{
         PlayerResources, Screen,
         gameplay::{
             BuildingMode, LUMBER_MILL_COST_LUMBER,
-            building::{BuildingAssets, BuildingLocation, BuildingType},
+            building::{BuildingAssets, BuildingLocation, BuildingType, ManaEntityLink},
         },
     },
     wildfire::{GameMap, TerrainType},
@@ -62,7 +62,7 @@ fn spawn_lumber_mill(
     let world_coords = map.world_coords(coords);
     info!("Spawning lumber mill at {coords}");
 
-    commands.spawn((
+    let mut cmds = commands.spawn((
         BuildingLocation(coords),
         BuildingType::LumberMill,
         LumberMill::default(),
@@ -76,7 +76,13 @@ fn spawn_lumber_mill(
             ..default()
         },
     ));
-
+    let id = cmds.id();
+    // hack so lumber mills die as the destruction logic is tied to the
+    // mana link chain
+    cmds.insert(ManaEntityLink {
+        from_entity: id,
+        destruction_time: None,
+    });
     *building_mode = BuildingMode::None;
 }
 
