@@ -338,6 +338,7 @@ fn handle_build_mode_changing(
             commands.spawn((
                 CursorModeFollower,
                 CursorModeItem,
+                StateScoped(Screen::Gameplay),
                 Sprite {
                     image: building_assets.city_hall.clone(),
                     ..default()
@@ -361,6 +362,7 @@ fn handle_build_mode_changing(
                 TrackParentBuildingWhilePlacing::new(BuildingType::ManaForge),
                 CursorModeItem,
                 CursorModeFollower,
+                StateScoped(Screen::Gameplay),
                 ManaLine::new(Vec3::ZERO, Vec3::ZERO),
                 Sprite {
                     image: building_assets.mana_forge.clone(),
@@ -376,6 +378,7 @@ fn handle_build_mode_changing(
                     TrackParentBuildingWhilePlacing::new(BuildingMode::PlaceStormMage.into()),
                     CursorModeItem,
                     CursorModeFollower,
+                    StateScoped(Screen::Gameplay),
                     ManaLine::new(Vec3::ZERO, Vec3::ZERO),
                     Transform::from_rotation(Quat::from_axis_angle(
                         Vec3::Z,
@@ -401,6 +404,7 @@ fn handle_build_mode_changing(
                 TrackParentBuildingWhilePlacing::new(next_mode.into()),
                 CursorModeItem,
                 CursorModeFollower,
+                StateScoped(Screen::Gameplay),
                 ManaLine::new(Vec3::ZERO, Vec3::ZERO),
                 Sprite {
                     image: match next_mode {
