@@ -17,6 +17,9 @@ use crate::{
     wildfire::{GameMap, TerrainType},
 };
 
+/// The amount of mana a mana forge produces
+pub const MANA_FORGE_MANA_DRAIN: i32 = 5;
+
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<ManaForge>();
 
@@ -74,7 +77,7 @@ fn spawn_mana_forge(
 
     info!("Spawning mana forge at {coords}");
     resources.lumber -= 50;
-    resources.mana_drain += 3;
+    resources.mana_drain += MANA_FORGE_MANA_DRAIN;
 
     commands.spawn((
         BuildingLocation(coords),
@@ -117,7 +120,7 @@ pub struct ManaForge {
 impl Default for ManaForge {
     fn default() -> Self {
         Self {
-            mana_per_second: 3,
+            mana_per_second: MANA_FORGE_MANA_DRAIN,
             time_since_last_tick: 0.,
         }
     }

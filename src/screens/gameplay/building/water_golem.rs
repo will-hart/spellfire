@@ -27,7 +27,8 @@ pub(super) fn plugin(app: &mut App) {
         produce_from_water_golem.run_if(
             in_state(Pause(false))
                 .and(in_state(Screen::Gameplay))
-                .and(resource_exists::<PlayerResources>),
+                .and(resource_exists::<PlayerResources>)
+                .and(resource_exists::<GameMap>),
         ),
     );
 }

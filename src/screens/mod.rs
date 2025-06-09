@@ -7,6 +7,7 @@ mod splash;
 mod title;
 mod victory;
 
+pub use game_over::GameOverAssets;
 pub use gameplay::{
     BuildingMode, BuildingType, EndlessMode, OnRedrawToolbar, PlayerResources, RequiresCityHall,
     story_mode::{NextStoryLevel, StoryModeLevel, get_level_data},

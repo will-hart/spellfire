@@ -7,7 +7,7 @@ use bevy::prelude::*;
 use crate::{
     Pause,
     screens::{Screen, gameplay::building::SpawnCityHall},
-    wildfire::{GOOD_SEEDS, GameMap, OnMeteorStrike},
+    wildfire::{GOOD_SEEDS, GameMap, OnMeteorStrike, WindDirection},
 };
 
 pub(super) fn plugin(app: &mut App) {
@@ -50,6 +50,10 @@ pub struct StoryModeLevel {
     pub starting_location: IVec2,
     /// The amount of time since this story level was started
     pub elapsed_time: f32,
+
+    /// Store the wind speed and angle, which is constant for story mode
+    pub wind_speed: f32,
+    pub wind_angle: f32,
 }
 
 impl Command for StoryModeLevel {
@@ -58,11 +62,18 @@ impl Command for StoryModeLevel {
     }
 }
 
-fn spawn_story(In(config): In<StoryModeLevel>, mut commands: Commands, map: Res<GameMap>) {
+fn spawn_story(
+    In(config): In<StoryModeLevel>,
+    mut commands: Commands,
+    map: Res<GameMap>,
+    mut wind: ResMut<WindDirection>,
+) {
     info!("Spawning items for level");
 
     let world_coords = map.world_coords(config.starting_location);
     commands.queue(SpawnCityHall(world_coords));
+
+    wind.r#override(config.wind_angle, config.wind_speed);
 }
 
 /// Tick the level elapsed time while unpaused
@@ -93,12 +104,13 @@ pub fn get_level_data(lvl: usize) -> Option<StoryModeLevel> {
             starting_location: IVec2 { x: 168, y: 243 },
             bolts: vec![
                 (10.0, IVec2 { x: 21, y: 46 }),
-                (19.0, IVec2 { x: 27, y: 175 }),
-                (19.2, IVec2 { x: 29, y: 177 }),
-                (19.2, IVec2 { x: 25, y: 173 }),
+                (30.0, IVec2 { x: 27, y: 175 }),
+                (30.2, IVec2 { x: 29, y: 177 }),
+                (30.2, IVec2 { x: 25, y: 173 }),
             ]
             .into(),
-
+            wind_speed: 15.0,
+            wind_angle: 32.0,
             elapsed_time: 0.0,
         })
     } else if lvl == 2 {
@@ -107,11 +119,45 @@ pub fn get_level_data(lvl: usize) -> Option<StoryModeLevel> {
             map_seed: GOOD_SEEDS[lvl - 1],
             starting_location: IVec2 { x: 27, y: 228 },
             bolts: vec![
-                (20.0, IVec2 { x: 29, y: 177 }),
-                (21.0, IVec2 { x: 175, y: 17 }),
+                (21.0, IVec2 { x: 242, y: 98 }),
+                (50.0, IVec2 { x: 3, y: 30 }),
             ]
             .into(),
 
+            wind_speed: 14.0,
+            wind_angle: 32.0,
+            elapsed_time: 0.0,
+        })
+    } else if lvl == 3 {
+        Some(StoryModeLevel {
+            level_number: lvl,
+            map_seed: GOOD_SEEDS[lvl - 1],
+            starting_location: IVec2 { x: 27, y: 228 },
+            bolts: vec![
+                (21.0, IVec2 { x: 242, y: 98 }),
+                (50.0, IVec2 { x: 3, y: 30 }),
+            ]
+            .into(),
+
+            wind_speed: 13.0,
+            wind_angle: 32.0,
+            elapsed_time: 0.0,
+        })
+    } else if lvl == 4 {
+        Some(StoryModeLevel {
+            level_number: lvl,
+            map_seed: GOOD_SEEDS[lvl - 1],
+            starting_location: IVec2 { x: 187, y: 195 },
+            bolts: vec![
+                (21.0, IVec2 { x: 68, y: 210 }),
+                (21.0, IVec2 { x: 67, y: 212 }),
+                (23.0, IVec2 { x: 63, y: 214 }),
+                (23.0, IVec2 { x: 61, y: 208 }),
+            ]
+            .into(),
+
+            wind_speed: 13.0,
+            wind_angle: 32.0,
             elapsed_time: 0.0,
         })
     } else {

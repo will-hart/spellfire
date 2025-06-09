@@ -4,7 +4,7 @@ use bevy::prelude::*;
 
 use crate::asset_tracking::LoadResource;
 use crate::audio::sound_effect;
-use crate::screens::{EndlessMode, Screen};
+use crate::screens::{EndlessMode, NextStoryLevel, Screen, get_level_data};
 use crate::theme::widget;
 
 pub(super) fn plugin(app: &mut App) {
@@ -16,9 +16,16 @@ pub(super) fn plugin(app: &mut App) {
 
 fn spawn_game_over_screen(
     mut commands: Commands,
-    maybe_endless_mode: Option<Res<EndlessMode>>,
     game_over_assets: Res<GameOverAssets>,
+    maybe_endless: Option<Res<EndlessMode>>,
+    maybe_next_story: Option<Res<NextStoryLevel>>,
 ) {
+    let show_try_again = maybe_endless.is_some()
+        || match maybe_next_story {
+            Some(next) => get_level_data(next.0).is_some(),
+            _ => false,
+        };
+
     commands.spawn(sound_effect(game_over_assets.defeated.clone()));
 
     commands
@@ -34,7 +41,7 @@ fn spawn_game_over_screen(
             ],
         ))
         .with_children(|parent| {
-            if maybe_endless_mode.is_some() {
+            if show_try_again {
                 parent.spawn((widget::button(
                     "Try Again?",
                     |_trigger: Trigger<Pointer<Click>>, mut next: ResMut<NextState<Screen>>| {
@@ -42,6 +49,7 @@ fn spawn_game_over_screen(
                     },
                 ),));
             }
+
             parent.spawn(widget::button(
                 "Flee to the menu",
                 |_trigger: Trigger<Pointer<Click>>, mut next: ResMut<NextState<Screen>>| {
@@ -56,6 +64,10 @@ fn spawn_game_over_screen(
 pub struct GameOverAssets {
     #[dependency]
     defeated: Handle<AudioSource>,
+    #[dependency]
+    pub you_won: Handle<AudioSource>,
+    #[dependency]
+    pub you_survived: Handle<AudioSource>,
 }
 
 impl FromWorld for GameOverAssets {
@@ -63,6 +75,8 @@ impl FromWorld for GameOverAssets {
         let assets = world.resource::<AssetServer>();
         Self {
             defeated: assets.load("audio/sound_effects/you_are_defeated.ogg"),
+            you_won: assets.load("audio/sound_effects/you_won.ogg"),
+            you_survived: assets.load("audio/sound_effects/you_survived.ogg"),
         }
     }
 }

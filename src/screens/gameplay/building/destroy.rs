@@ -35,7 +35,8 @@ pub(super) fn plugin(app: &mut App) {
             .run_if(
                 in_state(Pause(false))
                     .and(in_state(Screen::Gameplay))
-                    .and(resource_exists::<PlayerResources>),
+                    .and(resource_exists::<PlayerResources>)
+                    .and(resource_exists::<GameMap>),
             ),
     );
 
@@ -80,6 +81,8 @@ fn burn_buildings(
             // check if there are any children that need to be destroyed
             // lots of looping iteration here but I guess it happens infrequently
             // and its too late to think of a better way.
+            // NOTE: lumber mills dont have a parent so have a ManaEntityLink pointing
+            //       to themselves so they're captured by this logic
             let mut entities_to_boom = HashSet::<Entity>::from_iter([destroyed_entity]);
             let mut boom_times = HashMap::<Entity, f32>::from_iter([(destroyed_entity, 1.0)]);
             let mut made_changes = true;
@@ -176,6 +179,7 @@ fn handle_despawned_buildings(
                     loc.0 + IVec2::new(rng.gen_range(-14..=14), rng.gen_range(-14..14));
 
                 commands.spawn((
+                    StateScoped(Screen::Gameplay),
                     Fireball {
                         target_world_pos: map.world_coords(fire_tile_coords),
                     },

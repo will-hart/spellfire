@@ -12,7 +12,9 @@ use crate::{
     input::MousePosition,
     screens::{
         PlayerResources, Screen,
-        gameplay::{StormMagePlacementRotation, building::mana_forge::ManaForge},
+        gameplay::{
+            CursorModeFollower, StormMagePlacementRotation, building::mana_forge::ManaForge,
+        },
     },
     wildfire::GameMap,
 };
@@ -42,9 +44,9 @@ pub const BUILDING_FOOTPRINT_OFFSETS: [IVec2; 4] = [
 
 pub const LUMBER_MILL_COST_LUMBER: i32 = 30;
 pub const MANA_FORGE_COST_LUMBER: i32 = 40;
-pub const MINOTAUR_COST_MANA: i32 = 35;
-pub const STORM_MAGE_COST_MANA: i32 = 40;
-pub const WATER_GOLEM_COST_MANA: i32 = 30;
+pub const MINOTAUR_COST_MANA: i32 = 30;
+pub const STORM_MAGE_COST_MANA: i32 = 50;
+pub const WATER_GOLEM_COST_MANA: i32 = 20;
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<BuildingAssets>();
@@ -73,7 +75,7 @@ pub(super) fn plugin(app: &mut App) {
     app.add_systems(
         Update,
         ((
-            track_building_parent_while_placing,
+            track_building_parent_while_placing.run_if(resource_exists::<GameMap>),
             rotate_storm_mage.run_if(
                 input_just_pressed(KeyCode::KeyR)
                     .and(resource_exists::<StormMagePlacementRotation>),
@@ -137,6 +139,8 @@ pub struct BuildingAssets {
     #[dependency]
     pub storm_mage: Handle<Image>,
     #[dependency]
+    pub wind_direction: Handle<Image>,
+    #[dependency]
     pub water_golem: Handle<Image>,
     #[dependency]
     pub building_lost: Handle<AudioSource>,
@@ -184,6 +188,13 @@ impl FromWorld for BuildingAssets {
             ),
             storm_mage: assets.load_with_settings(
                 "images/storm_mage.png",
+                |settings: &mut ImageLoaderSettings| {
+                    // Use `nearest` image sampling to preserve pixel art style.
+                    settings.sampler = ImageSampler::nearest();
+                },
+            ),
+            wind_direction: assets.load_with_settings(
+                "images/wind_direction.png",
                 |settings: &mut ImageLoaderSettings| {
                     // Use `nearest` image sampling to preserve pixel art style.
                     settings.sampler = ImageSampler::nearest();
@@ -257,8 +268,16 @@ pub struct ManaLineBalls {
     pub mana_dot_distance: f32,
 }
 
-fn rotate_storm_mage(mut mode: ResMut<StormMagePlacementRotation>) {
-    mode.0 = mode.0.next();
+fn rotate_storm_mage(
+    mut mage_rotation: ResMut<StormMagePlacementRotation>,
+    mut follower: Query<&mut Transform, With<CursorModeFollower>>,
+) {
+    mage_rotation.0 = mage_rotation.0.next();
+    info!("Rotated storm mage to {:?}", mage_rotation.0);
+
+    for mut tx in &mut follower {
+        tx.rotation = Quat::from_axis_angle(Vec3::Z, mage_rotation.0.as_angle_rads());
+    }
 }
 
 fn track_building_parent_while_placing(

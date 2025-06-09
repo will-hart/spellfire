@@ -1,12 +1,16 @@
 //! Logic + code for placing storm mages buildings
 
-use bevy::{ecs::world::OnDespawn, prelude::*, sprite::Anchor};
+use bevy::{
+    color::palettes::tailwind::SLATE_500, ecs::world::OnDespawn, prelude::*, sprite::Anchor,
+};
+use bevy_vector_shapes::{prelude::ShapePainter, shapes::RectPainter};
 
 use crate::{
+    Pause,
     screens::{
         PlayerResources, Screen,
         gameplay::{
-            BuildingMode, STORM_MAGE_COST_MANA,
+            BuildingMode, STORM_MAGE_COST_MANA, StormMagePlacementRotation,
             building::{
                 BUILDING_FOOTPRINT_OFFSETS, BuildingAssets, BuildingLocation, BuildingType,
                 ManaEntityLink, ManaLine, ManaLineBalls, TrackParentBuildingWhilePlacing,
@@ -20,6 +24,13 @@ use crate::{
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<StormMage>();
     app.add_observer(remove_storm_mage);
+
+    app.add_systems(
+        Update,
+        draw_mage_areas.run_if(
+            in_state(Screen::Gameplay).and(in_state(Pause(false)).and(resource_exists::<GameMap>)),
+        ),
+    );
 }
 
 fn remove_storm_mage(
@@ -66,6 +77,7 @@ fn spawn_storm_mage(
     mut building_mode: ResMut<BuildingMode>,
     buildings: Res<BuildingAssets>,
     mut map: ResMut<GameMap>,
+    mage_rotation: Res<StormMagePlacementRotation>,
     parent_forge: Single<(Entity, &TrackParentBuildingWhilePlacing)>,
     forges: Query<&Transform, With<ManaForge>>,
 ) {
@@ -98,7 +110,10 @@ fn spawn_storm_mage(
         return;
     };
 
-    let mut mage = StormMage::default();
+    let mut mage = StormMage {
+        rotation: config.1,
+        ..default()
+    };
     mage.apply_to_map(coords, config.1, &mut map);
 
     commands.spawn((
@@ -115,7 +130,9 @@ fn spawn_storm_mage(
             destruction_time: None,
         },
         StateScoped(Screen::Gameplay),
-        Transform::from_xyz(world_coords.x, world_coords.y, 0.1),
+        Transform::from_xyz(world_coords.x, world_coords.y, 0.1).with_rotation(
+            Quat::from_axis_angle(Vec3::Z, mage_rotation.0.as_angle_rads()),
+        ),
         Visibility::Visible,
         Sprite {
             image: buildings.storm_mage.clone(),
@@ -135,6 +152,38 @@ fn spawn_storm_mage(
     *building_mode = BuildingMode::None;
 }
 
+/// draws a box where mages are
+// #[hot]
+fn draw_mage_areas(
+    mut painter: ShapePainter,
+    map: Res<GameMap>,
+    mages: Query<(&Transform, &StormMage)>,
+) {
+    let original_tx = painter.transform;
+
+    for (tx, mage) in &mages {
+        let (width, height) = match mage.rotation {
+            MageRotation::Left | MageRotation::Right => (
+                10.0 * map.sprite_size,
+                2.0 * mage.range as f32 * map.sprite_size,
+            ),
+            MageRotation::Up | MageRotation::Down => (
+                2.0 * mage.range as f32 * map.sprite_size,
+                10.0 * map.sprite_size,
+            ),
+        };
+
+        let mut color = SLATE_500;
+        color.alpha = 0.1;
+
+        painter.set_color(color);
+        painter
+            .translate(tx.translation + mage.rotation.as_vec().extend(0.0) * 6.0 * map.sprite_size);
+        painter.rect(Vec2::new(width, height));
+        painter.transform = original_tx;
+    }
+}
+
 /// A mana producing building
 #[derive(Component, Debug, Reflect)]
 #[reflect(Component)]
@@ -145,14 +194,17 @@ pub struct StormMage {
     wind: Vec2,
     /// The range that the storm mage works in
     range: i32,
+    /// The current rotation of the mage
+    rotation: MageRotation,
 }
 
 impl Default for StormMage {
     fn default() -> Self {
         Self {
             cells: Vec::new(),
-            wind: Vec2::X * 100.0,
+            wind: Vec2::ZERO,
             range: 10,
+            rotation: MageRotation::default(),
         }
     }
 }
@@ -160,21 +212,46 @@ impl Default for StormMage {
 #[derive(Debug, Clone, Copy, Default, Reflect)]
 pub enum MageRotation {
     Left,
-    Down,
+    Up,
     #[default]
     Right,
-    Up,
+    Down,
 }
 
 impl MageRotation {
     /// Gets the next rotation clockwise
     pub fn next(self) -> Self {
         match self {
-            MageRotation::Left => MageRotation::Up,
-            MageRotation::Down => MageRotation::Left,
-            MageRotation::Right => MageRotation::Down,
-            MageRotation::Up => MageRotation::Right,
+            MageRotation::Left => MageRotation::Down,
+            MageRotation::Up => MageRotation::Left,
+            MageRotation::Right => MageRotation::Up,
+            MageRotation::Down => MageRotation::Right,
         }
+    }
+
+    /// Gets the rotation of this mage in radians
+    pub fn as_angle_rads(&self) -> f32 {
+        match self {
+            MageRotation::Left => std::f32::consts::FRAC_PI_2,
+            MageRotation::Up => 0.0,
+            MageRotation::Right => -std::f32::consts::FRAC_PI_2,
+            MageRotation::Down => std::f32::consts::PI,
+        }
+    }
+
+    /// Converts this rotation to a Vec2
+    pub fn as_vec(&self) -> Vec2 {
+        match self {
+            MageRotation::Left => Vec2::new(-1.0, 0.0),
+            MageRotation::Up => Vec2::new(0.0, 1.0),
+            MageRotation::Right => Vec2::new(1.0, 0.0),
+            MageRotation::Down => Vec2::new(0.0, -1.0),
+        }
+    }
+
+    /// Takes the vec and multiplies by the strength
+    pub fn as_wind(&self, strength: f32) -> Vec2 {
+        self.as_vec() * strength
     }
 }
 
@@ -182,11 +259,14 @@ impl MageRotation {
 impl StormMage {
     /// Gets the cells that the mage handles based on its rotation
     fn get_relevant_cells(rotation: MageRotation, range: i32) -> impl Iterator<Item = IVec2> {
+        const MIN_D: i32 = 1;
+        const MAX_D: i32 = 10;
+
         let (x_range, y_range) = match rotation {
-            MageRotation::Left => (-5..=-1, -range..=range),
-            MageRotation::Down => (-range..=range, 1..=5),
-            MageRotation::Right => (1..=5, -range..=range),
-            MageRotation::Up => (-range..=range, 1..=5),
+            MageRotation::Left => (-MAX_D..=-MIN_D, -range..=range),
+            MageRotation::Up => (-range..=range, MIN_D..=MAX_D),
+            MageRotation::Right => (MIN_D..=MAX_D, -range..=range),
+            MageRotation::Down => (-range..=range, -MAX_D..=MIN_D),
         };
 
         x_range.flat_map(move |x| y_range.clone().map(move |y| IVec2::new(x, y)))
@@ -194,6 +274,8 @@ impl StormMage {
 
     /// applies the effects of the storm mage to the map
     pub fn apply_to_map(&mut self, mage_cell: IVec2, rotation: MageRotation, map: &mut GameMap) {
+        self.wind = rotation.as_wind(2000.0);
+
         for cell in Self::get_relevant_cells(rotation, self.range) {
             let Some(map_cell) = map.get_mut(cell + mage_cell) else {
                 warn!("Unable to locate cell in map, skipping wind from storm mage");
@@ -201,6 +283,8 @@ impl StormMage {
             };
 
             map_cell.wind += self.wind;
+            // map_cell.terrain = TerrainType::Building;
+            // map_cell.mark_dirty();
             self.cells.push(cell);
         }
     }

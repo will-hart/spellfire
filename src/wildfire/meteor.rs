@@ -26,8 +26,11 @@ pub(super) fn plugin(app: &mut App) {
     app.add_observer(handle_meteor_strike);
     app.add_systems(
         Update,
-        (handle_meteor_impacts, handle_fireball_impacts)
-            .run_if(in_state(Screen::Gameplay).and(in_state(Pause(false)))),
+        (handle_meteor_impacts, handle_fireball_impacts).run_if(
+            in_state(Screen::Gameplay)
+                .and(in_state(Pause(false)))
+                .and(resource_exists::<GameMap>),
+        ),
     );
 }
 

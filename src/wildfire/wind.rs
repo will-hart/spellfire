@@ -3,13 +3,16 @@
 use bevy::{math::CompassOctant, prelude::*};
 use rand::Rng;
 
-use crate::Pause;
+use crate::{Pause, screens::EndlessMode};
 
 pub(super) fn plugin(app: &mut App) {
     app.register_type::<WindDirection>();
     app.init_resource::<WindDirection>();
 
-    app.add_systems(Update, wandery_wind.run_if(in_state(Pause(false))));
+    app.add_systems(
+        Update,
+        wandery_wind.run_if(in_state(Pause(false)).and(resource_exists::<EndlessMode>)),
+    );
 }
 
 #[derive(Resource, Debug, Clone, Copy, Reflect)]
@@ -41,7 +44,7 @@ impl std::fmt::Display for WindDirection {
         if cfg!(debug_assertions) {
             write!(
                 f,
-                "{:.0}kts, from {} [{}-->{}]",
+                "{:.0}kts, from {} [{:.1}-->{:.1}]",
                 self.strength,
                 self.compass(),
                 self.angle,
@@ -78,6 +81,11 @@ impl WindDirection {
             CompassOctant::West => "W",
             CompassOctant::NorthWest => "NW",
         }
+    }
+
+    pub fn r#override(&mut self, angle: f32, strength: f32) {
+        self.angle = angle;
+        self.strength = strength;
     }
 }
 

@@ -9,7 +9,7 @@ use crate::{
         PlayerResources, Screen,
         gameplay::{
             BuildingMode, LUMBER_MILL_COST_LUMBER,
-            building::{BuildingAssets, BuildingLocation, BuildingType},
+            building::{BuildingAssets, BuildingLocation, BuildingType, ManaEntityLink},
         },
     },
     wildfire::{GameMap, TerrainType},
@@ -23,7 +23,8 @@ pub(super) fn plugin(app: &mut App) {
         produce_from_lumber_mill.run_if(
             in_state(Pause(false))
                 .and(in_state(Screen::Gameplay))
-                .and(resource_exists::<PlayerResources>),
+                .and(resource_exists::<PlayerResources>)
+                .and(resource_exists::<GameMap>),
         ),
     );
 }
@@ -61,7 +62,7 @@ fn spawn_lumber_mill(
     let world_coords = map.world_coords(coords);
     info!("Spawning lumber mill at {coords}");
 
-    commands.spawn((
+    let mut cmds = commands.spawn((
         BuildingLocation(coords),
         BuildingType::LumberMill,
         LumberMill::default(),
@@ -75,7 +76,13 @@ fn spawn_lumber_mill(
             ..default()
         },
     ));
-
+    let id = cmds.id();
+    // hack so lumber mills die as the destruction logic is tied to the
+    // mana link chain
+    cmds.insert(ManaEntityLink {
+        from_entity: id,
+        destruction_time: None,
+    });
     *building_mode = BuildingMode::None;
 }
 
@@ -129,6 +136,8 @@ impl LumberMill {
     }
 }
 
+const CHANCE_LUMBER_MILL_PLANTS_TREE: f64 = 0.15;
+
 fn produce_from_lumber_mill(
     time: Res<Time>,
     mut map: ResMut<GameMap>,
@@ -139,7 +148,7 @@ fn produce_from_lumber_mill(
     let mut rng = rand::thread_rng();
 
     for (loc, mut mill) in &mut mills {
-        let (target_terrain, new_terrain) = if rng.gen_bool(0.25) {
+        let (target_terrain, new_terrain) = if rng.gen_bool(CHANCE_LUMBER_MILL_PLANTS_TREE) {
             (TerrainType::Grassland, TerrainType::Tree)
         } else {
             (TerrainType::Tree, TerrainType::Grassland)
@@ -167,7 +176,7 @@ fn produce_from_lumber_mill(
                 current.mark_dirty();
 
                 if new_terrain == TerrainType::Grassland {
-                    resources.lumber += 1;
+                    resources.lumber += 2;
                 }
             }
             TerrainType::Dirt

@@ -47,15 +47,15 @@ Juice
 
 Polish
 
-2.- [ ] BALANCE
-  - [ ] wind can make story mode too easy / too hard (should be controlled by scenario?)
-  - [ ] Make scenarios balanced and winnable in a few different ways
+1.- [x] BALANCE
+  - [x] Make scenarios balanced and winnable in a few different ways
+  - [x] wind can make story mode too easy / too hard (should be controlled by scenario?)
   - [x] if you sequence buildings incorrectly you can get stuck (i.e. not enough for a lumber mill, not enough mana)
         potential solution - set initial lumber to low enough that you can't buy a mana forge? or maybe enough for one of each
 - [x] more building types
   - [x] wind mage
   - [x] water golem
-3.- [ ] More scenarios
+2.- [ ] More scenarios
 - [x] In story mode - zoom to city hall at the start of the game
 - [x] hot keys for building placement
 - [x] is wind even working?
@@ -71,6 +71,7 @@ Polish
 
 Probably out of scope for jam
 
+- [ ] make toolbar resoures less "twitchy" - update the amount continuously but only display the new resources every now and then?
 - [ ] show wind vane in the UI rather than text
 - [ ] main menu - show a fire in the background or something a bit more interesting
 - [ ] redraw map without respawning sprites (see map::redraw_map system) - possibly use a texture?
@@ -80,6 +81,7 @@ Probably out of scope for jam
 
 Bugs
 
+- [x] lumber mills don't get destroyed by fire
 - [x] Storm mage doesn't seem to work?
 - [x] Resources don't reset when hitting "M" for new endless mode map
 - [x] can place buildings off the map
