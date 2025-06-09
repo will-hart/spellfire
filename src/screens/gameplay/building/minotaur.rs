@@ -190,8 +190,9 @@ fn draw_minotaur_areas(
 
     for (tx, minotaur) in &golems {
         let mut color = LIME_600;
-        color.alpha = 0.2;
+        color.alpha = 0.4;
 
+        painter.hollow = true;
         painter.set_color(color);
         painter.translate(tx.translation - Vec3::new(0.0, 0.0, 0.05));
         painter.circle(minotaur.range as f32 * map.sprite_size);

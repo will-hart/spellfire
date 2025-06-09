@@ -33,7 +33,7 @@ pub use lumber_mill::SpawnLumberMill;
 pub use mana_forge::SpawnManaForge;
 pub use minotaur::SpawnMinotaur;
 pub use storm_mage::{MageRotation, SpawnStormMage};
-pub use water_golem::SpawnWaterGolem;
+pub use water_golem::{SpawnWaterGolem, WATER_GOLEM_MANA_CONSUMPTION};
 
 pub const BUILDING_FOOTPRINT_OFFSETS: [IVec2; 4] = [
     IVec2::ZERO,

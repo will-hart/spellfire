@@ -595,7 +595,7 @@ fn toolbar_data(toolbar_type: ToolbarButtonType) -> (HintMessage, HintMessage) {
              HintMessage::BuildingData {
                  name: "Water Golem".into(),
                  cost: format!("{WATER_GOLEM_COST_MANA} Mana"),
-                 details: "The Water Golem inhabits the area, consuming 1 mana / sec to increase the moisture around the area. Wetter areas are harder to set alight. Requires Mana Forge nearby".into(),
+                 details: "The Water Golem inhabits the area, consuming 4 mana every 2 seconds. When it consumes mana it makes the whole area wetter (less likely to catch fire) and has a 20% chance to quench nearby flames. Requires Mana Forge nearby".into(),
              },
              "Click the map to place a water golem (close to a mana forge). Press <space> to cancel placement".into()
          ),

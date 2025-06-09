@@ -79,7 +79,7 @@ fn spawn_water_golem(
 
     commands.entity(parent_tracking_entity).despawn();
     resources.mana -= WATER_GOLEM_COST_MANA;
-    resources.mana_drain -= 1;
+    resources.mana_drain -= 2;
 
     let world_coords = map.world_coords(coords);
     info!("Spawning water golem at {coords}");
@@ -137,37 +137,8 @@ impl Default for WaterGolem {
     fn default() -> Self {
         Self {
             time_since_last_tick: 0.0,
-            range: 3,
+            range: 4,
         }
-    }
-}
-
-impl WaterGolem {
-    /// Find the next tree for the lumber mill to harvest
-    fn find_next_target(&mut self, map: &mut GameMap, center: IVec2) -> Option<IVec2> {
-        // first find all the available cells that are trees
-        let coords = map
-            .cells_within_range(center, self.range)
-            .filter(
-                // limit to trees and grass
-                |coord| {
-                    // direct access ok here as we only have valid coords
-                    matches!(
-                        map.data[coord.y as usize][coord.x as usize].terrain,
-                        TerrainType::Grassland | TerrainType::Tree
-                    )
-                },
-            )
-            .collect::<Vec<_>>();
-
-        if coords.is_empty() {
-            return None;
-        }
-
-        // now pick one and move there
-        let mut rng = rand::thread_rng();
-        let idx = rng.gen_range(0..coords.len());
-        Some(coords[idx])
     }
 }
 
@@ -180,8 +151,9 @@ fn draw_golem_areas(
 
     for (tx, golem) in &golems {
         let mut color = INDIGO_600;
-        color.alpha = 0.2;
+        color.alpha = 0.4;
 
+        painter.hollow = true;
         painter.set_color(color);
         painter.translate(tx.translation - Vec3::new(0.0, 0.0, 0.05));
         painter.circle(golem.range as f32 * map.sprite_size);
@@ -190,17 +162,21 @@ fn draw_golem_areas(
     }
 }
 
-// #[cfg_attr(target_os = "macos", hot)]
+pub const WATER_GOLEM_PRODUCTION_TIME: f32 = 2.0;
+pub const WATER_GOLEM_QUENCH_CHANCE: f64 = 0.3;
+pub const WATER_GOLEM_MOISTURE_INCREASE: f32 = 0.05;
+pub const WATER_GOLEM_MANA_CONSUMPTION: i32 = 4;
+
 fn produce_from_water_golem(
     time: Res<Time>,
     mut map: ResMut<GameMap>,
     mut resources: ResMut<PlayerResources>,
-    mut forges: Query<(&BuildingLocation, &mut WaterGolem)>,
+    mut golems: Query<(&BuildingLocation, &mut WaterGolem)>,
 ) {
     let delta = time.delta_secs();
 
-    for (loc, mut golem) in &mut forges {
-        if golem.time_since_last_tick + delta <= 1.0 {
+    for (loc, mut golem) in &mut golems {
+        if golem.time_since_last_tick + delta <= WATER_GOLEM_PRODUCTION_TIME {
             golem.time_since_last_tick += delta;
             continue;
         }
@@ -208,32 +184,39 @@ fn produce_from_water_golem(
         golem.time_since_last_tick = 0.0;
 
         // check if we have enough mana
-        if resources.mana <= 0 {
+        if resources.mana < WATER_GOLEM_MANA_CONSUMPTION {
             info!("Not enough mana to produce from minotaur at {}", loc.0);
             continue;
         }
-        resources.mana = (resources.mana - 1).max(0);
+        resources.mana = (resources.mana - WATER_GOLEM_MANA_CONSUMPTION).max(0);
 
-        // reduce the current cell
-        let Some(next_target) = golem.find_next_target(&mut map, loc.0) else {
-            warn!("Unable to find cell to moisten. Skipping water golem production.");
-            continue;
-        };
+        // find all cells in rand and handle them
+        let neighbours = map
+            .cells_within_range(loc.0, golem.range)
+            .collect::<Vec<_>>();
 
-        if let Some(current) = map.get_mut(next_target) {
-            match current.terrain {
-                TerrainType::Grassland | TerrainType::Tree => {
-                    current.moisture = (current.moisture + 0.2).clamp(0.0, 1.0);
-                    current.mark_dirty();
-                    // continue, don't move on until we have dirt
-                    continue;
-                }
-                TerrainType::Building
-                | TerrainType::Dirt
-                | TerrainType::Stone
-                | TerrainType::Fire
-                | TerrainType::Smoldering => {
-                    // nop
+        let mut rng = rand::thread_rng();
+
+        for coord in &neighbours {
+            if let Some(cell) = map.get_mut(*coord) {
+                match cell.terrain {
+                    TerrainType::Fire => {
+                        if rng.gen_bool(WATER_GOLEM_QUENCH_CHANCE) {
+                            cell.terrain = TerrainType::Smoldering;
+                            cell.mark_dirty();
+                        }
+                    }
+                    TerrainType::Grassland | TerrainType::Tree => {
+                        cell.moisture =
+                            (cell.moisture + WATER_GOLEM_MOISTURE_INCREASE).clamp(0.0, 1.0);
+                        cell.mark_dirty();
+                    }
+                    TerrainType::Dirt
+                    | TerrainType::Building
+                    | TerrainType::Stone
+                    | TerrainType::Smoldering => {
+                        // nop
+                    }
                 }
             }
         }

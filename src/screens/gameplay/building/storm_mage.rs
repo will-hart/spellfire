@@ -174,8 +174,9 @@ fn draw_mage_areas(
         };
 
         let mut color = SLATE_500;
-        color.alpha = 0.1;
+        color.alpha = 0.5;
 
+        painter.hollow = true;
         painter.set_color(color);
         painter.translate(
             tx.translation + mage.rotation.as_vec().extend(0.0) * 6.0 * map.sprite_size
