@@ -199,7 +199,11 @@ fn handle_despawned_buildings(
         BuildingType::StormMage => {
             resources.mana_drain -= 2;
         }
-        BuildingType::Minotaur | BuildingType::WaterGolem => {
+
+        BuildingType::WaterGolem => {
+            resources.mana_drain += 2; // 4 mana / 2 seconds
+        }
+        BuildingType::Minotaur => {
             resources.mana_drain += 1;
         }
         BuildingType::LumberMill => {}
